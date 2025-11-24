@@ -1957,3 +1957,34 @@
         font-size: 1.0em;
     }
 }
+/* 1. บังคับให้กล่องรวมตัวเลือกเรียงเป็นแนวนอน (Row) */
+#page-pos .payment-options-wrapper {
+    display: flex !important;
+    flex-direction: row !important; /* แนวนอน */
+    flex-wrap: nowrap !important;   /* ห้ามปัดตกบรรทัด */
+    justify-content: flex-start !important; /* ชิดซ้าย (หรือใช้ center หากต้องการกึ่งกลาง) */
+    gap: 15px !important;           /* ระยะห่างระหว่างแต่ละตัวเลือก */
+    align-items: center !important;
+    overflow-x: auto; /* เผื่อหน้าจอเล็กมากให้เลื่อนแนวนอนได้ */
+}
+
+/* 2. จัด Label ให้ปุ่มอยู่หน้าข้อความ */
+#page-pos .payment-options-wrapper label {
+    display: flex !important;
+    align-items: center !important; /* จัดกึ่งกลางแนวตั้ง */
+    flex-direction: row !important; /* ปุ่มซ้าย ข้อความขวา */
+    margin: 0 !important;
+    width: auto !important;         /* แก้ปัญหา Label กว้างเต็มจอ */
+    white-space: nowrap !important; /* ห้ามข้อความตกบรรทัด */
+    cursor: pointer;
+}
+
+/* 3. ปรับขนาดปุ่ม Radio ให้กลับมาเป็นปกติ */
+#page-pos .payment-options-wrapper input[type="radio"] {
+    width: auto !important;        /* ยกเลิกความกว้าง 100% */
+    height: 18px !important;       /* กำหนดขนาดความสูงปุ่ม */
+    margin: 0 6px 0 0 !important;  /* เว้นระยะขวา 6px ให้ห่างจากข้อความ */
+    padding: 0 !important;
+    transform: scale(1.1);         /* ขยายปุ่มเล็กน้อยให้จิ้มง่ายในมือถือ */
+    accent-color: var(--danger-color); /* สีปุ่มตาม Theme เดิม */
+}
