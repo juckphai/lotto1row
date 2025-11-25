@@ -2136,7 +2136,7 @@ input[type="date"] {
     flex: 1 1 0 !important;
     width: 0 !important;
     min-width: 0 !important;
-    font-size: clamp(0.55rem, 1vw, 0.9em) !important;
+    font-size: clamp(0.65rem, 1vw, 0.9em) !important;
     padding: 0 6px !important;
     text-align: center !important;
     height: 38px !important;
@@ -2163,6 +2163,7 @@ input[type="date"] {
     #page-pos #add-to-cart-form .product-quantity-group select,
     #page-pos #add-to-cart-form .product-quantity-group input {
         height: 36px !important;
-        font-size: clamp(0.55rem, 1.5vw, 0.85em) !important;
+        font-size: clamp(0.65rem, 1.5vw, 0.85em) !important;
     }
 }
+
