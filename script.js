@@ -3453,7 +3453,7 @@ fillPages(){
                     </div>
                     
 <div class="product-quantity-group">
-    <label for="pos-product" class="inline-label">สินค้าและจำนวน:</label>
+    <label for="pos-product" class="inline-label">สินค้า/จำนวน:</label>
     <select id="pos-product" required></select>
     <input type="number" id="pos-quantity" value="1" min="1" required>
 </div>
@@ -4271,4 +4271,5 @@ fillPages(){
     
     window.App = App;
     App.init();
+
 });
