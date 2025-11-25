@@ -2130,3 +2130,42 @@ input[type="date"] {
             margin: 0 !important; /* ลบระยะห่างภายนอกที่ไม่จำเป็น */
             box-sizing: border-box !important; /* รวมขอบในความกว้าง/สูง */
         }
+/* === START: PRODUCT & QUANTITY GROUPING (ตามไฟล์ 1.txt) === */
+
+/* จัดกลุ่มสินค้าและจำนวนให้อยู่บรรทัดเดียวกัน */
+.product-qty-group {
+    display: flex !important;
+    flex-direction: row !important; /* เรียงแนวนอน */
+    align-items: center !important; /* จัดกึ่งกลางแนวตั้ง */
+    gap: 5px !important; /* ระยะห่างระหว่างสินค้ากับจำนวน */
+    grid-column: 2 / -1; /* ให้กินพื้นที่คอลัมน์ขวาของ Grid */
+    width: 100% !important;
+}
+
+/* ปรับช่องเลือกสินค้า (Select) ให้ขยายเต็มพื้นที่ที่เหลือ */
+.product-qty-group select {
+    flex-grow: 1 !important; /* ยืดให้เต็มพื้นที่ */
+    width: 0 !important; /* แก้บั๊ก Flexbox ไม่ยอมหดในบาง Browser */
+    min-width: 0 !important;
+    margin: 0 !important; /* ลบ margin เดิมออก */
+}
+
+/* ปรับช่องจำนวน (Input) ให้มีความกว้างคงที่ */
+.product-qty-group input {
+    width: 75px !important; /* ความกว้างช่องจำนวน */
+    flex-shrink: 0 !important; /* ห้ามหดตัว */
+    text-align: center !important;
+    padding: 8px 2px !important; /* ลด padding ซ้ายขวา */
+    margin: 0 !important; /* ลบ margin เดิมออก */
+    height: 38px !important; /* บังคับความสูงให้เท่ากับ Select */
+}
+
+/* ปรับแต่งสำหรับมือถือ (Mobile Responsive) */
+@media (max-width: 768px) {
+    .product-qty-group input {
+        width: 65px !important; /* ลดขนาดช่องจำนวนลงเล็กน้อยในมือถือ */
+        padding: 6px 2px !important;
+        font-size: 0.9em !important;
+    }
+}
+/* === END: PRODUCT & QUANTITY GROUPING === */
