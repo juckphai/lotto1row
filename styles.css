@@ -2120,7 +2120,7 @@ input[type="date"] {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 3px !important;
     width: 100% !important;
 
     /* ❗ สำคัญที่สุด: บังคับให้กลุ่มนี้กินทั้งแถว ไม่ถูกบีบโดย Grid */
@@ -2136,7 +2136,7 @@ input[type="date"] {
     flex: 1 1 0 !important;
     width: 0 !important;
     min-width: 0 !important;
-    font-size: clamp(0.65rem, 1vw, 0.9em) !important;
+    font-size: clamp(0.75rem, 1vw, 0.9em) !important;
     padding: 0 6px !important;
     text-align: center !important;
     height: 38px !important;
@@ -2147,11 +2147,11 @@ input[type="date"] {
 
 /* กำหนดสัดส่วน: 70% + 30% */
 #page-pos #add-to-cart-form .product-quantity-group select {
-    flex: 7 !important;
+    flex: 8 !important;
 }
 
 #page-pos #add-to-cart-form .product-quantity-group input {
-    flex: 3 !important;
+    flex: 2 !important;
 }
 
 /* === MOBILE === */
@@ -2163,7 +2163,6 @@ input[type="date"] {
     #page-pos #add-to-cart-form .product-quantity-group select,
     #page-pos #add-to-cart-form .product-quantity-group input {
         height: 36px !important;
-        font-size: clamp(0.65rem, 1.5vw, 0.85em) !important;
+        font-size: clamp(0.75rem, 1.5vw, 0.85em) !important;
     }
 }
-
