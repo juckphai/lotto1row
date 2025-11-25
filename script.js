@@ -3450,26 +3450,26 @@ fillPages(){
                     <div id="pos-date-time-group" class="date-time-group">
                         <input type="date" id="pos-date">
                         <input type="time" id="pos-time">
-              
                     </div>
-                    <label for="pos-product">เลือกสินค้า:</label>
-                    <select id="pos-product" required></select>
-                    <label for="pos-quantity">จำนวน:</label>
-                    <input type="number" id="pos-quantity" value="1" min="1" required>
+                    
+<div class="product-quantity-group">
+    <label for="pos-product" class="inline-label">สินค้าและจำนวน:</label>
+    <select id="pos-product" required></select>
+    <input type="number" id="pos-quantity" value="1" min="1" required>
+</div>
+
    
                     <div id="special-price-container" style="display: none; grid-column: 1 / -1;
  grid-template-columns: 150px 1fr; align-items: center; gap: 15px;">
                         <label for="special-price">ราคาขายใหม่:</label>
                         <div>
                             <input type="number" id="special-price" placeholder="กรอกราคาต่อหน่วย" min="0" step="any">
-           
                             <span id="current-price-info" style="font-size: 0.9em;
  color: #555; margin-left: 10px;"></span>
                         </div>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="success">เพิ่มลงตะกร้า</button>
-     
                         <button type="button" id="toggle-special-price-btn">ใช้ราคาพิเศษ</button>
                     </div>
                 </form>
