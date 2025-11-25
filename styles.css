@@ -813,16 +813,29 @@
         
         /* === NEW: CSS for Date/Time Grouping (Desktop & General) === */
         #page-pos #add-to-cart-form .date-time-group {
-            display: flex;
-            gap: 3px; /* Spacing between date and time inputs */
-            grid-column: 2 / -1; /* Ensures it spans the full content column on desktop */
+            display: flex !important; /* บังคับใช้ Flexbox */
+            flex-direction: row !important; /* เรียงแนวนอนซ้ายไปขวา */
+            align-items: center !important; /* จัดกึ่งกลางแนวตั้ง */
+            gap: 5px !important; /* ระยะห่างระหว่างช่องวันที่กับเวลา */
+            grid-column: 2 / -1; /* ครอบคลุมพื้นที่คอลัมน์ขวา */
+            width: 100% !important; /* กว้างเต็มพื้นที่ */
         }
         #page-pos #add-to-cart-form .date-time-group input {
-            flex-grow: 1;
-            min-width: 0;
-            font-size: clamp(0.55rem, 1.0vw, 0.9em); 
-            padding: 6px 7px; /* ลด padding */
+            flex: 1 1 0 !important; /* แบ่งพื้นที่เท่ากัน 50/50 และย่อขยายได้ */
+            width: 0 !important; /* แก้บั๊ก Flexbox ไม่ยอมหดในบาง Browser */
+            min-width: 0 !important; /* อนุญาตให้หดเล็กสุดได้ */
+            font-size: clamp(0.75rem, 1vw, 0.9em) !important; /* ปรับขนาดตัวอักษร */
+            padding: 0 5px !important; /* ระยะห่างภายใน */
+            text-align: center !important; /* จัดตัวหนังสือกลางช่อง */
+            
+            /* บังคับโครงสร้างกล่อง */
+            height: 38px !important;  /* บังคับความสูงให้เท่ากันเป๊ะ */
+            line-height: normal !important;
+            margin: 0 !important; /* ลบระยะห่างภายนอกที่ไม่จำเป็น */
+            box-sizing: border-box !important; /* รวมขอบในความกว้าง/สูง */
         }
+
+
         /* === END NEW === */
 
 /* === START: ปรับปรุงฟอร์มรหัสผ่านสำรอง (User Request) === */
@@ -1137,14 +1150,29 @@
             }
             
             /* --- NEW: Mobile adjustment for Date/Time Grouping --- */
-            #page-pos #add-to-cart-form .date-time-group {
-                grid-column: 2 / -1; /* Make sure the date/time group spans the second column */
-                gap: 3px; /* ลด gap */
-            }
-            #page-pos #add-to-cart-form .date-time-group input {
-                padding: 6px 7px; /* ลด padding */
-                font-size: 0.75em; /* ลด font size */
-            }
+        #page-pos #add-to-cart-form .date-time-group {
+            display: flex !important; /* บังคับใช้ Flexbox */
+            flex-direction: row !important; /* เรียงแนวนอนซ้ายไปขวา */
+            align-items: center !important; /* จัดกึ่งกลางแนวตั้ง */
+            gap: 5px !important; /* ระยะห่างระหว่างช่องวันที่กับเวลา */
+            grid-column: 2 / -1; /* ครอบคลุมพื้นที่คอลัมน์ขวา */
+            width: 100% !important; /* กว้างเต็มพื้นที่ */
+        }
+        #page-pos #add-to-cart-form .date-time-group input {
+            flex: 1 1 0 !important; /* แบ่งพื้นที่เท่ากัน 50/50 และย่อขยายได้ */
+            width: 0 !important; /* แก้บั๊ก Flexbox ไม่ยอมหดในบาง Browser */
+            min-width: 0 !important; /* อนุญาตให้หดเล็กสุดได้ */
+            font-size: clamp(0.75rem, 1vw, 0.9em) !important; /* ปรับขนาดตัวอักษร */
+            padding: 0 5px !important; /* ระยะห่างภายใน */
+            text-align: center !important; /* จัดตัวหนังสือกลางช่อง */
+            
+            /* บังคับโครงสร้างกล่อง */
+            height: 38px !important;  /* บังคับความสูงให้เท่ากันเป๊ะ */
+            line-height: normal !important;
+            margin: 0 !important; /* ลบระยะห่างภายนอกที่ไม่จำเป็น */
+            box-sizing: border-box !important; /* รวมขอบในความกว้าง/สูง */
+        }
+
             /* --- END NEW --- */
 
             /* --- Cart Summary Compacting Rules --- */
@@ -1988,3 +2016,117 @@
     transform: scale(1.1);         /* ขยายปุ่มเล็กน้อยให้จิ้มง่ายในมือถือ */
     accent-color: var(--danger-color); /* สีปุ่มตาม Theme เดิม */
 }
+/* ==========================================================================
+   FORCE DUAL-COLUMN DATE PICKERS (FINAL FIX)
+   บังคับให้ช่องเลือกวันที่แสดง 2 แถบในบรรทัดเดียว (50/50) ทุกหน้าจอ
+   ครอบคลุม: แอดมิน, ผู้ขาย, รายงานขั้นสูง, ประวัติการขาย
+   ========================================================================== */
+
+/* 1. กำหนด Grid 2 คอลัมน์ให้กับ Container ที่เก็บวันที่ทุกจุด */
+#sales-history-export-form,                        /* แอดมิน: ประวัติการขาย */
+#report-filter-form,                               /* แอดมิน: รายงานกำไร/ขาดทุน */
+#seller-filter-by-range-div,                       /* ผู้ขาย: ค้นหาประวัติ (ช่วงเวลา) */
+#seller-detailed-report-form .summary-form-inline, /* ผู้ขาย: รายงานแจกแจง */
+#seller-credit-report-form .summary-form-inline,   /* ผู้ขาย: รายงานลูกหนี้ */
+#seller-transfer-report-form .summary-form-inline, /* ผู้ขาย: รายงานเงินโอน */
+#admin-report-filters .summary-form-inline,        /* แอดมิน: รายงานขั้นสูง (ตัวปัญหา) */
+#seller-summary-content .summary-form-inline > div /* ผู้ขาย: สรุปยอดขายตามช่วง (ในกรอบ div) */
+{
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important; /* แบ่งครึ่ง 50% - 50% เสมอ */
+    gap: 8px !important;        /* ระยะห่างระหว่างช่องซ้าย-ขวา */
+    align-items: end !important; /* จัดก้นกล่องให้เท่ากัน */
+    width: 100% !important;
+    box-sizing: border-box !important;
+    justify-content: stretch !important;
+}
+
+/* 2. ปรับแต่ง Label (ข้อความหัวข้อ) ให้ตัวหนังสืออยู่ "ด้านบน" ของช่องกรอก */
+/* (ยกเว้นแอดมินรายงานขั้นสูง เพราะโครงสร้างต่างจากเพื่อน) */
+#sales-history-export-form label,
+#report-filter-form label,
+#seller-filter-by-range-div label,
+#seller-detailed-report-form .summary-form-inline label,
+#seller-credit-report-form .summary-form-inline label,
+#seller-transfer-report-form .summary-form-inline label,
+#seller-summary-content label {
+    display: flex !important;
+    flex-direction: column !important; /* เรียงแนวตั้ง: บน=ข้อความ, ล่าง=input */
+    width: 100% !important;
+    margin: 0 !important;
+    text-align: left !important;
+    font-size: 0.9em !important;
+    font-weight: bold !important;
+    color: var(--text-color) !important;
+}
+
+/* 3. ปรับแต่งช่อง Input Date ให้เต็มความกว้างของคอลัมน์ */
+input[type="date"] {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 5px !important;
+    padding: 8px !important;
+    min-width: 0 !important; /* แก้บั๊กมือถือดันจอ */
+}
+
+/* 4. กรณีพิเศษ: แก้ไข "รายงานขั้นสูงของแอดมิน" (#admin-report-filters)
+   โครงสร้างเดิมเป็นแบบพี่น้อง (Label, Input, Label, Input) จึงต้องจัดตำแหน่งด้วย Grid Row/Column */
+
+#admin-report-filters .summary-form-inline {
+    grid-template-rows: auto auto !important; /* สร้าง 2 แถว: แถวชื่อ กับ แถวช่องกรอก */
+    gap: 2px 10px !important; /* เว้นระยะ: บนล่าง 2px, ซ้ายขวา 10px */
+}
+
+/* บังคับตำแหน่ง "จากวันที่" */
+#admin-report-filters .summary-form-inline label:nth-of-type(1) {
+    grid-row: 1; grid-column: 1; /* อยู่แถว 1 ซ้าย */
+    text-align: left !important; margin-bottom: 0 !important;
+}
+#admin-report-filters .summary-form-inline input:nth-of-type(1) {
+    grid-row: 2; grid-column: 1; /* อยู่แถว 2 ซ้าย */
+    margin-top: 0 !important;
+}
+
+/* บังคับตำแหน่ง "ถึงวันที่" */
+#admin-report-filters .summary-form-inline label:nth-of-type(2) {
+    grid-row: 1; grid-column: 2; /* อยู่แถว 1 ขวา */
+    text-align: left !important; margin-bottom: 0 !important;
+}
+#admin-report-filters .summary-form-inline input:nth-of-type(2) {
+    grid-row: 2; grid-column: 2; /* อยู่แถว 2 ขวา */
+    margin-top: 0 !important;
+}
+
+/* 5. จัดการปุ่มกด (Button) และตัวเลือกอื่นๆ ให้ลงมาบรรทัดใหม่เต็มจอ */
+/* เพื่อไม่ให้เบียดกับช่องวันที่ */
+#sales-history-export-form button,
+#report-filter-form button,
+#report-filter-form label:has(select), /* ตัวเลือกผู้ขายในรายงานกำไร */
+#seller-sales-filter-form button,
+#seller-detailed-report-form .form-actions,
+#seller-credit-report-form .form-actions,
+#seller-transfer-report-form .form-actions {
+    grid-column: 1 / -1 !important; /* กินพื้นที่ซ้ายสุดถึงขวาสุด (เต็มบรรทัด) */
+    width: 100% !important;
+    margin-top: 10px !important;
+}
+
+/* แก้ไขเพิ่มเติมเฉพาะหน้ากำไร/ขาดทุน ให้ Select Box เต็มจอ */
+#report-filter-form select {
+    width: 100% !important;
+}
+@media (max-width: 768px) {
+        #page-pos #add-to-cart-form .date-time-group input {
+            flex: 1 1 0 !important; /* แบ่งพื้นที่เท่ากัน 50/50 และย่อขยายได้ */
+            width: 0 !important; /* แก้บั๊ก Flexbox ไม่ยอมหดในบาง Browser */
+            min-width: 0 !important; /* อนุญาตให้หดเล็กสุดได้ */
+            font-size: clamp(0.75rem, 1vw, 0.9em) !important; /* ปรับขนาดตัวอักษร */
+            padding: 0 5px !important; /* ระยะห่างภายใน */
+            text-align: center !important; /* จัดตัวหนังสือกลางช่อง */
+            
+            /* บังคับโครงสร้างกล่อง */
+            height: 36px !important;  /* บังคับความสูงให้เท่ากันเป๊ะ */
+            line-height: normal !important;
+            margin: 0 !important; /* ลบระยะห่างภายนอกที่ไม่จำเป็น */
+            box-sizing: border-box !important; /* รวมขอบในความกว้าง/สูง */
+        }
