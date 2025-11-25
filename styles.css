@@ -2147,17 +2147,17 @@ input[type="date"] {
 
 /* กำหนดสัดส่วน: 70% + 30% */
 #page-pos #add-to-cart-form .product-quantity-group select {
-    flex: 8 !important;
+    flex: 8.5 !important;
 }
 
 #page-pos #add-to-cart-form .product-quantity-group input {
-    flex: 2 !important;
+    flex: 1.5 !important;
 }
 
 /* === MOBILE === */
 @media (max-width: 768px) {
     #page-pos #add-to-cart-form .product-quantity-group {
-        gap: 5px !important;
+        gap: 2px !important;
     }
 
     #page-pos #add-to-cart-form .product-quantity-group select,
