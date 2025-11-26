@@ -589,15 +589,43 @@
                     URL.revokeObjectURL(url);
                     this.showToast(`บันทึกไฟล์ "${fullFileName}" เรียบร้อย (โหมดดาวน์โหลดปกติ)`);
                 },
-                // *** เพิ่มฟังก์ชันที่หายไปสำหรับปุ่ม Recalculate ***
-                handleRecalculateStock() {
-                    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการ "คำนวณสต็อกใหม่ทั้งหมด" ? การกระทำนี้จะใช้ประวัติการนำเข้า/ขาย/ปรับออกทั้งหมด เพื่อกำหนดค่าสต็อกสินค้าปัจจุบันใหม่')) {
-                        this.recalculateAllStock();
-                        this.saveData();
-                        this.showToast('คำนวณสต็อกใหม่ทั้งหมดสำเร็จ!');
-                        this.renderStockSummaryReport();
-                    }
+  // ฟังก์ชันคำนวณสต็อกใหม่ทั้งหมด (ต้องมีตัวนี้ครับ ไม่งั้น Restore ไม่ผ่าน)
+                recalculateAllStock() {
+                    const totalStockIn = new Map();
+                    const totalSold = new Map();
+                    const totalStockOut = new Map();
+
+                    // 1. รวมยอดนำเข้า
+                    this.data.stockIns.forEach(si => {
+                        const currentQty = totalStockIn.get(si.productId) || 0;
+                        totalStockIn.set(si.productId, currentQty + si.quantity);
+                    });
+
+                    // 2. รวมยอดขาย
+                    this.data.sales.forEach(sale => {
+                        sale.items.forEach(item => {
+                            const currentQty = totalSold.get(item.productId) || 0;
+                            totalSold.set(item.productId, currentQty + item.quantity);
+                        });
+                    });
+
+                    // 3. รวมยอดปรับออก
+                    this.data.stockOuts.forEach(so => {
+                        const currentQty = totalStockOut.get(so.productId) || 0;
+                        totalStockOut.set(so.productId, currentQty + so.quantity);
+                    });
+
+                    // 4. อัปเดตสต็อกสินค้าทุกตัว
+                    this.data.products.forEach(product => {
+                        const initialStock = totalStockIn.get(product.id) || 0;
+                        const soldQty = totalSold.get(product.id) || 0;
+                        const stockOutQty = totalStockOut.get(product.id) || 0;
+                        product.stock = initialStock - soldQty - stockOutQty;
+                    });
+                    console.log("Stock recalculated for all products based on history.");
                 },
+
+                // ฟังก์ชันช่วยรวมอาร์เรย์ (Helper) - ควรมีตัวนี้ด้วยเผื่อหายไป
                 _mergeSingleArray(currentArray, newArray, key = 'id') {
                     if (!newArray || !Array.isArray(newArray)) return;
                     const currentIds = new Set(currentArray.map(item => item[key]));
@@ -616,6 +644,8 @@
                         }
                     });
                 },
+
+                // ฟังก์ชันรวมข้อมูล (Merge Data) - ต้องมีตัวนี้ด้วย
                 mergeData(dataFromFile) {
                     if (dataFromFile.users && Array.isArray(dataFromFile.users)) {
                         const currentAdmin = this.data.users.find(u => u.username === 'admin');
@@ -641,12 +671,15 @@
                                 existingProduct.costPrice = newProduct.costPrice;
                                 existingProduct.sellingPrice = newProduct.sellingPrice;
                                 existingProduct.unit = newProduct.unit;
+                                // [สำคัญ] บรรทัดนี้คือส่วนที่เพิ่มเข้ามาใหม่เพื่ออัปเดตบาร์โค้ด
+                                if(newProduct.barcode) existingProduct.barcode = newProduct.barcode; 
                             } else {
                                 this.data.products.push(newProduct);
                             }
                         });
                     }
                 },
+
                 async promptLoadFromFile(event) {
                     const file = event.target.files[0];
                     if (!file) return;
