@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -87,24 +88,6 @@
             margin: 20px 0;
             border-color: #ddd;
         }
-        /* Sync button style */
-        #manual-sync-btn {
-            background-color: #ff9800;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        #manual-sync-btn:hover {
-            background-color: #e68900;
-        }
-        #manual-sync-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
     </style>
 </head>
 <body>
@@ -146,10 +129,13 @@
                     บัญชีขาย <span id="store-display-name" style="color: #FFD700; font-style: normal;"></span>
                     <span id="connection-status" class="online-status" title="สถานะการเชื่อมต่อ"></span>
                 </h1>
-                <div id="user-info-container">
-                    <span id="user-info"></span>
-                    <button id="logout-btn">ออกจากระบบ</button>
-                </div>
+    <div id="user-info-container">
+    <span id="user-info"></span>
+    <button id="sync-data-btn" style="background-color: #28a745; margin-right: 10px;">
+    <span class="sync-icon">🔄</span> ซิงค์ข้อมูล
+</button>
+    <button id="logout-btn">ออกจากระบบ</button>
+</div>
             </div>
 
             <div class="section-header header-pos" onclick="App.showPage('page-pos')">
@@ -198,7 +184,7 @@
             <div id="page-users" class="section-content admin-only"></div>
 
             <!-- NEW: Auto Report Menu (Admin Only) -->
-            <div class="section-header header-auto-report admin-only" style="background-color: #ff5722; color: white;" onclick="App.showPage('page-auto-report')">
+<div class="section-header header-auto-report admin-only" style="background-color: #ff5722; color: white;" onclick="App.showPage('page-auto-report')">
                 <span>📤 ส่งรายงานอัตโนมัติ</span><span class="arrow">▶</span>
             </div>
             <div id="page-auto-report" class="section-content admin-only"></div>
@@ -210,7 +196,7 @@
         </div>
 
         <footer class="app-footer">
-            &copy; 240869 pos-system-b5e73. All Rights Reserved.
+            &copy; 250869 pos-system-b5e73. All Rights Reserved.
         </footer>
         
     </div>
@@ -379,15 +365,15 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, enableIndexedDbPersistence, collection } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDKEQVWfw0tULXvJF525jD5YXpdwyosFzU",
-            authDomain: "pos-system-b5e73.firebaseapp.com",
-            projectId: "pos-system-b5e73",
-            storageBucket: "pos-system-b5e73.firebasestorage.app",
-            messagingSenderId: "40551826282",
-            appId: "1:40551826282:web:70d49178ed79b6304b1b13",
-            measurementId: "G-Z85ZBPMC64"
-        };
+const firebaseConfig = {
+  apiKey: "AIzaSyDKEQVWfw0tULXvJF525jD5YXpdwyosFzU",
+  authDomain: "pos-system-b5e73.firebaseapp.com",
+  projectId: "pos-system-b5e73",
+  storageBucket: "pos-system-b5e73.firebasestorage.app",
+  messagingSenderId: "40551826282",
+  appId: "1:40551826282:web:70d49178ed79b6304b1b13",
+  measurementId: "G-Z85ZBPMC64"
+};
 
         window._initFirebaseModule = async function() {
             try {
@@ -395,32 +381,17 @@
                 const auth = getAuth(app);
                 const db = getFirestore(app);
 
-                // ✅ รอให้ Authentication เสร็จก่อนใช้งาน
-                await new Promise((resolve) => {
-                    const unsubscribe = onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            console.log('✅ Firebase Auth สำเร็จ:', user.uid);
-                            unsubscribe();
-                            resolve();
-                        }
-                    });
-                });
-
                 try { 
                     await enableIndexedDbPersistence(db);
-                    console.log('✅ Firebase Persistence Enabled'); 
+                    console.log('Firebase Persistence Enabled'); 
                 } catch (err) {
-                    console.log('⚠️ Persistence Error:', err.code);
+                    console.log('Persistence Error/Already Enabled:', err.code);
                 }
 
-                // ✅ ตรวจสอบว่าล็อกอินแล้ว ถ้ายังให้ล็อกอิน
-                if (!auth.currentUser) {
-                    await signInAnonymously(auth);
-                }
-
+                await signInAnonymously(auth);
                 return { app, auth, db };
             } catch (e) {
-                console.error("❌ Firebase Init Error:", e);
+                console.error("Firebase Init Error:", e);
                 return null;
             }
         };

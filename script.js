@@ -51,7 +51,6 @@ document.addEventListener("DOMContentLoaded", () => {
     posTimeManuallyChanged: false,
     _isInitialSync: false,
     _unsubscribe: null,
-    _isSyncing: false,
 
     // =================================================================
     // 2. INITIALIZATION METHODS
@@ -515,7 +514,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <p style="font-size:0.9em;">สำรองข้อมูลทั้งหมด (ผู้ใช้, สินค้า, ประวัติการขาย) ลงในไฟล์ JSON เพื่อเก็บไว้หรือย้ายไปยังเครื่องอื่น</p>
             <button id="save-to-file-btn" class="success">บันทึกข้อมูลทั้งหมดลงไฟล์</button>
             <button id="save-to-browser-btn" style="background-color: #007bff;">บันทึกชั่วคราวลงในเบราว์เซอร์</button>
-            <button id="manual-sync-btn" style="background-color: #ff9800; color: white; padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold;">🔄 ซิงค์ข้อมูลทันที</button>
         </div>
         <div class="data-management-section admin-only" style="border-color: var(--danger-color);">
             <h3 style="color: var(--danger-color);">รีเซ็ตข้อมูล (*** การกระทำนี้ไม่สามารถย้อนกลับได้ ***)</h3>
@@ -960,15 +958,32 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       return Promise.resolve();
     },
-    
+    // 5.2.1 Manual Sync (Force Push & Pull)
+    async manualSync() {
+      this.showToast("🔄 กำลังซิงค์ข้อมูลกับระบบคลาวด์...", "warning");
+      try {
+        // 1. บันทึกข้อมูลและดันขึ้น Firebase (Push)
+        await this.saveData(); 
+        
+        // 2. ดึงข้อมูลล่าสุดจาก Firebase มาอัปเดต (Pull)
+        if (this.firebase && this.firebase.db) {
+          await this.pullFromCloud();
+        }
+        
+        this.showToast("✅ ซิงค์ข้อมูลสำเร็จและเป็นปัจจุบันแล้ว", "success");
+      } catch (error) {
+        console.error("Manual Sync Error:", error);
+        this.showToast("❌ การซิงค์ล้มเหลว โปรดตรวจสอบอินเทอร์เน็ต", "error");
+      }
+    },
     // 5.3 Init Firebase and Sync
     async initFirebaseAndSync() {
       if (window._initFirebaseModule) {
         try {
           this.firebase = await window._initFirebaseModule();
-          console.log("✅ Firebase initialized");
-          await this.pullFromCloud();
+          console.log("Firebase initialized");
           this.startRealtimeSync();
+          await this.pullFromCloud();
         } catch (e) {
           console.warn("Firebase initialization failed, continuing offline:", e);
         }
@@ -996,66 +1011,43 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5.5 Merge From Cloud
     mergeFromCloud(remote) {
       if (!remote || !remote._meta) return;
-      
-      // ✅ ใช้ lastCloudSync เปรียบเทียบแทน lastLocalUpdate
-      if (remote._meta.lastCloudSync <= this.data._meta.lastCloudSync) {
-        console.log("☁️ ข้อมูลใน Cloud ไม่ได้ใหม่กว่า, ข้ามการ merge");
+      if (remote._meta.lastLocalUpdate <= this.data._meta.lastLocalUpdate) {
+        console.log("☁️ ข้อมูลใน Cloud ไม่ได้ใหม่กว่าข้อมูล local, ข้ามการ merge");
         return;
       }
-      
       console.log("🔄 กำลังอัปเดตข้อมูลจาก Cloud (รวมถึงรายการที่ถูกลบ)...");
-      
-      // ✅ ใช้ Merge Array แบบ Deep Merge
-      this.data.users = this.mergeArray(this.data.users, remote.users || [], 'id');
-      this.data.products = this.mergeArray(this.data.products, remote.products || [], 'id');
-      this.data.sales = this.mergeArray(this.data.sales, remote.sales || [], 'id');
-      this.data.stockIns = this.mergeArray(this.data.stockIns, remote.stockIns || [], 'id');
-      this.data.stockOuts = this.mergeArray(this.data.stockOuts, remote.stockOuts || [], 'id');
-      this.data.stores = this.mergeArray(this.data.stores, remote.stores || [], 'id');
+      this.data.users = remote.users || [];
+      this.data.products = remote.products || [];
+      this.data.sales = remote.sales || [];
+      this.data.stockIns = remote.stockIns || [];
+      this.data.stockOuts = remote.stockOuts || [];
+      this.data.stores = remote.stores || [];
       this.data.backupPassword = remote.backupPassword || null;
       if (remote.autoReport) this.data.autoReport = remote.autoReport;
-      
       this.data._meta.lastLocalUpdate = remote._meta.lastLocalUpdate;
-      this.data._meta.lastCloudSync = remote._meta.lastCloudSync;
+      this.data._meta.lastCloudSync = Date.now();
       this.recalculateAllStock();
       this.saveLocal();
       this.refreshCurrentPage();
       console.log("✅ ข้อมูลทุกอย่างเป็นปัจจุบันแล้ว");
     },
     
-    // 5.6 Merge Array Helper
-    mergeArray(current, incoming, key) {
-      const map = new Map();
-      current.forEach(item => map.set(item[key], item));
-      incoming.forEach(item => {
-        if (map.has(item[key])) {
-          // อัปเดตข้อมูลเดิม
-          map.set(item[key], { ...map.get(item[key]), ...item });
-        } else {
-          // เพิ่มข้อมูลใหม่
-          map.set(item[key], item);
-        }
-      });
-      return Array.from(map.values());
-    },
-    
-    // 5.7 Push To Cloud
+    // 5.6 Push To Cloud
     async pushToCloud() {
       if (!this.firebase?.db) return;
       try {
         this.data._meta.lastLocalUpdate = Date.now();
-        this.data._meta.lastCloudSync = Date.now();
         const dataToSync = JSON.parse(JSON.stringify(this.data));
         await window.firebase_tools_setDoc(this.firebase.db, "pos", "data", dataToSync);
+        this.data._meta.lastCloudSync = Date.now();
         this.saveLocal();
         console.log("📤 Push ข้อมูลขึ้น Cloud สำเร็จ");
       } catch (e) {
         console.warn("Failed to sync to Firestore:", e);
-        throw e;
       }
     },
     
-    // 5.8 Start Realtime Sync
+    // 5.7 Start Realtime Sync
     startRealtimeSync() {
       if (!this.firebase || !this.firebase.db) return;
       if (this._unsubscribe) this._unsubscribe();
@@ -1064,7 +1056,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (snapshot) => {
           if (snapshot && snapshot.data) {
             const remoteData = snapshot.data;
-            if (remoteData._meta?.lastCloudSync > this.data._meta.lastCloudSync) {
+            if (remoteData._meta?.lastLocalUpdate > this.data._meta.lastLocalUpdate) {
               console.log("⚡ Received update from Cloud (Realtime)");
               this.mergeFromCloud(remoteData);
             }
@@ -1074,40 +1066,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("🔗 เริ่มต้น Real-time Sync แล้ว");
     },
     
-    // 5.9 Sync Now (Manual Sync)
-    async syncNow() {
-      if (this._isSyncing) {
-        this.showToast("⏳ กำลังซิงค์ข้อมูล กรุณารอสักครู่...", "warning");
-        return;
-      }
-      if (!this.firebase?.db) {
-        this.showToast("❌ ไม่มีการเชื่อมต่อ Firebase", "error");
-        return;
-      }
-      this._isSyncing = true;
-      const syncBtn = document.getElementById("manual-sync-btn");
-      if (syncBtn) {
-        syncBtn.disabled = true;
-        syncBtn.textContent = "⏳ กำลังซิงค์...";
-      }
-      try {
-        this.showToast("🔄 กำลังซิงค์ข้อมูล...", "info");
-        await this.pullFromCloud();
-        await this.pushToCloud();
-        this.showToast("✅ ซิงค์ข้อมูลสำเร็จ!", "success");
-      } catch (e) {
-        this.showToast("❌ ซิงค์ล้มเหลว: " + e.message, "error");
-        console.error("Sync error:", e);
-      } finally {
-        this._isSyncing = false;
-        if (syncBtn) {
-          syncBtn.disabled = false;
-          syncBtn.textContent = "🔄 ซิงค์ข้อมูลทันที";
-        }
-      }
-    },
-    
-    // 5.10 Download JSON
+    // 5.8 Download JSON
     downloadJSON(dataObj, fileName) {
       try {
         const dataStr = JSON.stringify(dataObj, null, 2);
@@ -1126,7 +1085,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
     
-    // 5.11 Manual Save To Browser
+    // 5.9 Manual Save To Browser
     manualSaveToBrowser() {
       this.data._meta.lastLocalUpdate = Date.now();
       this.saveLocal();
@@ -1534,7 +1493,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 8. DATA MERGE & RESET FUNCTIONS
     // =================================================================
     
-    // 8.1 Merge Single Array (Legacy - kept for compatibility)
+    // 8.1 Merge Single Array
     _mergeSingleArray(currentArray, newArray, key = "id") {
       if (!newArray || !Array.isArray(newArray)) return;
       const currentIds = new Set(currentArray.map((item) => item[key]));
@@ -1588,14 +1547,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
     
-    // 8.3 Open Reset Modal
+// 8.3 Open Reset Modal
     openResetModal() {
-      document.getElementById("reset-sales-checkbox").checked = false;
-      document.getElementById("reset-stockins-checkbox").checked = false;
-      document.getElementById("reset-stockouts-checkbox").checked = false;
-      document.getElementById("reset-products-checkbox").checked = false;
-      document.getElementById("reset-sellers-checkbox").checked = false;
-      document.getElementById("reset-stores-checkbox").checked = false;
+      if(document.getElementById("reset-sales-checkbox")) document.getElementById("reset-sales-checkbox").checked = false;
+      if(document.getElementById("reset-stockins-checkbox")) document.getElementById("reset-stockins-checkbox").checked = false;
+      if(document.getElementById("reset-stockouts-checkbox")) document.getElementById("reset-stockouts-checkbox").checked = false;
+      if(document.getElementById("reset-products-checkbox")) document.getElementById("reset-products-checkbox").checked = false;
+      if(document.getElementById("reset-sellers-checkbox")) document.getElementById("reset-sellers-checkbox").checked = false;
+      if(document.getElementById("reset-stores-checkbox")) document.getElementById("reset-stores-checkbox").checked = false;
       document.getElementById("resetModal").style.display = "flex";
     },
     
@@ -4061,6 +4020,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (loginForm) loginForm.addEventListener("submit", (e) => { e.preventDefault(); this.login(document.getElementById("username").value, document.getElementById("password").value); });
       const logoutBtn = document.getElementById("logout-btn");
       if (logoutBtn) logoutBtn.addEventListener("click", () => this.logout());
+// ปุ่มซิงค์ข้อมูล
+      const syncBtn = document.getElementById("sync-data-btn");
+      if (syncBtn) syncBtn.addEventListener("click", () => this.manualSync());
       const mainApp = document.getElementById("main-app");
       if (mainApp) {
         mainApp.addEventListener("submit", (e) => {
@@ -4087,7 +4049,6 @@ document.addEventListener("DOMContentLoaded", () => {
           if (e.target.id === "load-from-file-btn") document.getElementById("data-file-input").click();
           if (e.target.id === "save-to-file-btn") this.showExportOptionsModal();
           if (e.target.id === "save-to-browser-btn" || e.target.id === "save-to-browser-btn-seller") this.manualSaveToBrowser();
-          if (e.target.id === "manual-sync-btn") { e.preventDefault(); this.syncNow(); }
           if (e.target.id === "open-reset-modal-btn") this.openResetModal();
           if (e.target.id === "generate-stock-report-btn") this.renderStockSummaryReport();
           if (e.target.id === "generate-yesterday-stock-report-btn") this.renderYesterdayStockSummaryReport();
