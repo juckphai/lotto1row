@@ -5,18 +5,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>บัญชีขาย</title>
 
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#4a90e2"/>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="บัญชีขาย">
-  <link rel="apple-touch-icon" href="./192.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4a90e2"/>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="บัญชีขาย">
+    <link rel="apple-touch-icon" href="./192.png">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        .online-status {
+            width: 10px;
+            height: 10px;
+            background-color: #ccc;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 8px;
+            box-shadow: 0 0 2px #000;
+        }
+        .online-status.active {
+            background-color: #00ff00;
+            box-shadow: 0 0 5px #00ff00;
+        }
+        .online-status.error {
+            background-color: #ff0000;
+        }
+        /* Auto Report Page Styles */
+        .auto-report-settings {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .auto-report-settings .setting-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .auto-report-settings .setting-group label {
+            font-weight: bold;
+            color: #333;
+        }
+        .auto-report-settings .setting-group input,
+        .auto-report-settings .setting-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .auto-report-settings .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .auto-report-settings .checkbox-group label {
+            font-weight: normal;
+        }
+        .auto-report-settings .seller-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+        .auto-report-settings .seller-list label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .auto-report-settings hr {
+            margin: 20px 0;
+            border-color: #ddd;
+        }
+        /* Sync button style */
+        #manual-sync-btn {
+            background-color: #ff9800;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        #manual-sync-btn:hover {
+            background-color: #e68900;
+        }
+        #manual-sync-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
     <div class="main-wrapper">
@@ -55,6 +144,7 @@
             <div class="top-bar">
                 <h1 style="font-size: 16px; font-style: normal;">
                     บัญชีขาย <span id="store-display-name" style="color: #FFD700; font-style: normal;"></span>
+                    <span id="connection-status" class="online-status" title="สถานะการเชื่อมต่อ"></span>
                 </h1>
                 <div id="user-info-container">
                     <span id="user-info"></span>
@@ -107,20 +197,33 @@
             </div>
             <div id="page-users" class="section-content admin-only"></div>
 
+            <!-- NEW: Auto Report Menu (Admin Only) -->
+            <div class="section-header header-auto-report admin-only" style="background-color: #ff5722; color: white;" onclick="App.showPage('page-auto-report')">
+                <span>📤 ส่งรายงานอัตโนมัติ</span><span class="arrow">▶</span>
+            </div>
+            <div id="page-auto-report" class="section-content admin-only"></div>
+
             <div class="section-header header-data" onclick="App.showPage('page-data')">
                 <span>จัดการข้อมูล</span><span class="arrow">▶</span>
             </div>
             <div id="page-data" class="section-content"></div>
         </div>
+
+        <footer class="app-footer">
+            &copy; 240869 pos-system-b5e73. All Rights Reserved.
+        </footer>
+        
     </div>
 
     <div id="toast-notification"></div>
-
+    
+    <!-- SUMMARY MODAL -->
     <div id="summaryModal" class="modal-overlay">
         <div class="modal-content-container">
             <div id="modalBodyContent"></div>
             <div class="modal-controls">
                 <button id="saveSummaryAsImageBtn" class="modal-close-btn" style="background-color: #007bff; margin-bottom: 15px;">บันทึกเป็นรูปภาพ</button>
+                <button id="shareSummaryImageBtn" class="modal-close-btn" style="background-color: #28a745; margin-bottom: 15px;">แชร์รูปภาพ</button>
                 <div class="control-group">
                     <label for="summaryFontSizeSlider">ปรับขนาดตัวอักษร:</label>
                     <input type="range" id="summaryFontSizeSlider" min="0.5" max="1.5" step="0.05" value="1.0">
@@ -136,6 +239,7 @@
         </div>
     </div>
 
+    <!-- SUMMARY OUTPUT MODAL -->
     <div id="summaryOutputModal" class="modal-overlay">
         <div class="format-modal-content">
             <h3>เลือกรูปแบบการแสดงผลสรุป</h3>
@@ -148,6 +252,7 @@
         </div>
     </div>
     
+    <!-- RESET MODAL -->
     <div id="resetModal" class="modal-overlay">
         <div id="reset-modal-content">
             <h3>เลือกข้อมูลที่จะรีเซ็ต</h3>
@@ -166,8 +271,192 @@
         </div>
     </div>
 
+    <!-- EXPORT OPTIONS MODAL (อัปเดตตามคำแนะนำใน 01.txt) -->
+    <div id="exportOptionsModal" class="modal-overlay">
+        <div class="format-modal-content">
+            <h3 style="color: #4a90e2; margin-top: 0;">💾 เลือกรูปแบบการสำรองข้อมูล</h3>
+            <p style="margin-bottom: 15px; color: #555;">กรุณาเลือกขอบเขตข้อมูลที่ต้องการบันทึก</p>
+            <div class="format-modal-buttons" style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="App.exportFullBackup()" style="background-color: #007bff; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; width: 100%;">
+                    📂 สำรองข้อมูลทั้งหมด (ทุกบัญชี)
+                </button>
+                <button onclick="App.exportAccountBackup()" style="background-color: #17a2b8; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; width: 100%;">
+                    👤 สำรองข้อมูลเฉพาะบัญชีนี้
+                </button>
+                <button onclick="App.showSingleDateExportModal()" style="background-color: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; width: 100%;">
+                    📅 สำรองข้อมูลตามช่วงวันที่ (มียกยอด)
+                </button>
+                <button class="btn-cancel" onclick="App.closeExportOptionsModal()" style="background-color: #dc3545; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; width: 100%; margin-top: 5px;">
+                    ❌ ยกเลิก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SINGLE DATE EXPORT MODAL (เลือกช่วงวันที่ + ยกยอด) -->
+    <div id="singleDateExportModal" class="modal-overlay">
+        <div class="format-modal-content">
+            <h3 style="color: #28a745; margin-top: 0;">📆 เลือกช่วงวันที่ต้องการบันทึก</h3>
+            <p style="margin-bottom: 10px;">📁 ข้อมูลจากบัญชี: <strong id="singleDateAccountName" style="color: #007bff;"></strong></p>
+            <div class="entry-form" style="margin-bottom: 2px;">
+                <div class="entry-group" style="margin-bottom: 10px; text-align: left;">
+                    <label for="exportStartDate" style="display: block; font-weight: bold; margin-bottom: 5px;">📅 จากวันที่:</label>
+                    <input type="date" id="exportStartDate" required style="background-color: #fff; padding: 8px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div class="entry-group" style="margin-bottom: 10px; text-align: left;">
+                    <label for="exportEndDate" style="display: block; font-weight: bold; margin-bottom: 5px;">📅 ถึงวันที่:</label>
+                    <input type="date" id="exportEndDate" required style="background-color: #fff; padding: 8px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+            </div>
+            
+            <div class="entry-group" style="margin: 15px 0; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px;">
+                <input type="checkbox" id="exportIncludeCarryForward" checked style="width: 18px; height: 18px; cursor: pointer;">
+                <label for="exportIncludeCarryForward" style="margin: 0; cursor: pointer; font-size: 14px;">📊 บันทึกข้อมูลยกยอด (ก่อนช่วงที่เลือก)</label>
+            </div>
+
+            <div class="format-modal-buttons" style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn-display" onclick="App.processDateRangeExport()" style="background-color: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; width: 100%;">💾 บันทึกข้อมูล</button>
+                <button class="btn-cancel" onclick="App.closeSingleDateExportModal()" style="background-color: #6c757d; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; width: 100%;">❌ ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTO REPORT SETTINGS MODAL (สำหรับปรับแต่งเวลาส่งรายงาน) -->
+    <div id="autoReportModal" class="modal-overlay">
+        <div class="format-modal-content" style="max-width: 550px;">
+            <h3 style="color: #4a90e2; margin-top: 0;">⚙️ ตั้งค่าระบบส่งรายงานอัตโนมัติ</h3>
+            <div class="auto-report-settings" style="padding: 0;">
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="auto-report-enabled"> เปิดใช้งานระบบส่งรายงานอัตโนมัติ
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label>⏰ เวลาที่ต้องการส่งรายงาน (HH:MM)</label>
+                    <input type="time" id="auto-report-time" value="21:00">
+                </div>
+                <div class="setting-group">
+                    <label>🤖 Bot Token (Telegram)</label>
+                    <input type="text" id="auto-report-bot-token" placeholder="ใส่ Bot Token จาก @BotFather">
+                </div>
+                <div class="setting-group">
+                    <label>💬 Chat ID (Telegram)</label>
+                    <input type="text" id="auto-report-chat-id" placeholder="ใส่ Chat ID ของคุณ">
+                    <small style="color: #666;">👉 ใช้ @userinfobot เพื่อหา Chat ID</small>
+                </div>
+                <div class="setting-group">
+                    <label>📅 รายงานของวันที่</label>
+                    <select id="auto-report-date-mode">
+                        <option value="today">วันนี้ (ยอดขายวันนี้)</option>
+                        <option value="yesterday">เมื่อวาน (ยอดขายเมื่อวาน)</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>👥 สรุปยอดขายของ</label>
+                    <select id="auto-report-seller-mode">
+                        <option value="all">ผู้ขายทั้งหมด</option>
+                        <option value="specific">เลือกเฉพาะผู้ขาย</option>
+                    </select>
+                </div>
+                <div id="auto-report-seller-list-container" class="setting-group" style="display: none;">
+                    <label>เลือกผู้ขายที่ต้องการสรุป</label>
+                    <div id="auto-report-seller-list" class="seller-list"></div>
+                </div>
+                <hr>
+                <div class="form-actions" style="justify-content: center; gap: 10px;">
+                    <button id="save-auto-report-settings" class="success">💾 บันทึกการตั้งค่า</button>
+                    <button id="test-auto-report-now" style="background-color: #ff9800;">📨 ทดสอบส่งรายงานทันที</button>
+                    <button id="close-auto-report-modal" class="btn-cancel" style="background-color: #6c757d;">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="print-container"></div>
     
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, enableIndexedDbPersistence, collection } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKEQVWfw0tULXvJF525jD5YXpdwyosFzU",
+            authDomain: "pos-system-b5e73.firebaseapp.com",
+            projectId: "pos-system-b5e73",
+            storageBucket: "pos-system-b5e73.firebasestorage.app",
+            messagingSenderId: "40551826282",
+            appId: "1:40551826282:web:70d49178ed79b6304b1b13",
+            measurementId: "G-Z85ZBPMC64"
+        };
+
+        window._initFirebaseModule = async function() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+                const db = getFirestore(app);
+
+                // ✅ รอให้ Authentication เสร็จก่อนใช้งาน
+                await new Promise((resolve) => {
+                    const unsubscribe = onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            console.log('✅ Firebase Auth สำเร็จ:', user.uid);
+                            unsubscribe();
+                            resolve();
+                        }
+                    });
+                });
+
+                try { 
+                    await enableIndexedDbPersistence(db);
+                    console.log('✅ Firebase Persistence Enabled'); 
+                } catch (err) {
+                    console.log('⚠️ Persistence Error:', err.code);
+                }
+
+                // ✅ ตรวจสอบว่าล็อกอินแล้ว ถ้ายังให้ล็อกอิน
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+
+                return { app, auth, db };
+            } catch (e) {
+                console.error("❌ Firebase Init Error:", e);
+                return null;
+            }
+        };
+
+        window.firebase_tools_getDoc = async function(db, collectionName, docId) {
+            try {
+                const docRef = doc(db, collectionName, docId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    return { exists: true, data: docSnap.data() };
+                } else {
+                    return { exists: false, data: null };
+                }
+            } catch (e) {
+                console.error("Error getting document:", e);
+                throw e;
+            }
+        };
+
+        window.firebase_tools_setDoc = async function(db, collectionName, docId, data, merge = false) {
+            try {
+                const docRef = doc(db, collectionName, docId);
+                await setDoc(docRef, data, { merge: merge }); 
+            } catch (e) {
+                console.error("Error writing document:", e);
+                throw e;
+            }
+        };
+
+        window.firebase_tools_onSnapshot = function(db, collectionName, docId, callback) {
+            const docRef = doc(db, collectionName, docId);
+            return onSnapshot(docRef, { includeMetadataChanges: true }, (doc) => {
+                if(doc.exists()) callback({ data: doc.data(), metadata: doc.metadata });
+            });
+        };
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
