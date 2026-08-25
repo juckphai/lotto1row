@@ -935,7 +935,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5. DATA PERSISTENCE & SYNC (Offline-First)
     // =================================================================
     
-    // 5.1 Save Local
+// 5.1 Save Local
     saveLocal() {
       try {
         localStorage.setItem("posData", JSON.stringify(this.data));
@@ -946,7 +946,8 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // 5.2 Save Data (with Cloud Sync)
     async saveData() {
-      this.data._meta.lastLocalUpdate = Date.now();
+      // บังคับให้เวลาอัปเดตเดินหน้าเสมอ แม้นาฬิกาเครื่องจะเพี้ยน
+      this.data._meta.lastLocalUpdate = Math.max(Date.now(), (this.data._meta.lastLocalUpdate || 0) + 1);
       this.saveLocal();
       this.refreshCurrentPage();
       if (this.firebase?.db) {
@@ -958,24 +959,39 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       return Promise.resolve();
     },
-    // 5.2.1 Manual Sync (Force Push & Pull)
+
+    // 5.2.1 Manual Sync (Smart Push & Pull)
     async manualSync() {
-      this.showToast("🔄 กำลังซิงค์ข้อมูลกับระบบคลาวด์...", "warning");
+      this.showToast("🔄 กำลังตรวจสอบและผสานข้อมูล...", "warning");
       try {
-        // 1. บันทึกข้อมูลและดันขึ้น Firebase (Push)
-        await this.saveData(); 
-        
-        // 2. ดึงข้อมูลล่าสุดจาก Firebase มาอัปเดต (Pull)
-        if (this.firebase && this.firebase.db) {
-          await this.pullFromCloud();
+        if (!this.firebase || !this.firebase.db) {
+          this.showToast("❌ ไม่ได้เชื่อมต่อฐานข้อมูลคลาวด์", "error");
+          return;
         }
+
+        const result = await window.firebase_tools_getDoc(this.firebase.db, "pos", "data");
         
-        this.showToast("✅ ซิงค์ข้อมูลสำเร็จและเป็นปัจจุบันแล้ว", "success");
+        if (result && result.exists && result.data) {
+          const remoteData = result.data;
+          // ผสานข้อมูลแบบอัจฉริยะ (เช็ครายชิ้น)
+          const hasUnsynced = this.mergeFromCloud(remoteData);
+          
+          if (hasUnsynced || this.data._meta.lastLocalUpdate > remoteData._meta.lastLocalUpdate) {
+            await this.pushToCloud();
+            this.showToast("✅ ซิงค์และผสานข้อมูลล่าสุดสำเร็จ", "success");
+          } else {
+            this.showToast("✅ ข้อมูลตรงกันและเป็นปัจจุบันแล้ว", "success");
+          }
+        } else {
+          await this.pushToCloud();
+          this.showToast("✅ อัปโหลดข้อมูลเริ่มต้นขึ้นคลาวด์สำเร็จ", "success");
+        }
       } catch (error) {
         console.error("Manual Sync Error:", error);
         this.showToast("❌ การซิงค์ล้มเหลว โปรดตรวจสอบอินเทอร์เน็ต", "error");
       }
     },
+    
     // 5.3 Init Firebase and Sync
     async initFirebaseAndSync() {
       if (window._initFirebaseModule) {
@@ -999,7 +1015,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (result && result.exists && result.data) {
           const remoteData = result.data;
           console.log("☁️ ดึงข้อมูลจาก Cloud สำเร็จ");
-          this.mergeFromCloud(remoteData);
+          const hasUnsynced = this.mergeFromCloud(remoteData);
+          if (hasUnsynced) {
+             await this.pushToCloud();
+          }
         }
       } catch (e) {
         console.warn("Cannot load from Firebase:", e);
@@ -1008,35 +1027,94 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
     
-    // 5.5 Merge From Cloud
+    // 5.5 Merge From Cloud (Smart Merge)
+    _markAsDeleted(id) {
+      if (!this.data._meta) this.data._meta = {};
+      if (!this.data._meta.deleted) this.data._meta.deleted = {};
+      this.data._meta.deleted[String(id)] = Date.now();
+    },
+    
     mergeFromCloud(remote) {
-      if (!remote || !remote._meta) return;
-      if (remote._meta.lastLocalUpdate <= this.data._meta.lastLocalUpdate) {
-        console.log("☁️ ข้อมูลใน Cloud ไม่ได้ใหม่กว่าข้อมูล local, ข้ามการ merge");
-        return;
+      if (!remote || !remote._meta) return false;
+
+      console.log("🔄 กำลังผสานข้อมูลจาก Cloud แบบรายชิ้น...");
+      let hasLocalUnsyncedChanges = false;
+
+      // 1. ผสานรายการที่ถูกลบ (Tombstones)
+      if (!this.data._meta.deleted) this.data._meta.deleted = {};
+      if (remote._meta && remote._meta.deleted) {
+          for (const [id, ts] of Object.entries(remote._meta.deleted)) {
+              if (!this.data._meta.deleted[id] || ts > this.data._meta.deleted[id]) {
+                  this.data._meta.deleted[id] = ts;
+              }
+          }
       }
-      console.log("🔄 กำลังอัปเดตข้อมูลจาก Cloud (รวมถึงรายการที่ถูกลบ)...");
-      this.data.users = remote.users || [];
-      this.data.products = remote.products || [];
-      this.data.sales = remote.sales || [];
-      this.data.stockIns = remote.stockIns || [];
-      this.data.stockOuts = remote.stockOuts || [];
-      this.data.stores = remote.stores || [];
-      this.data.backupPassword = remote.backupPassword || null;
-      if (remote.autoReport) this.data.autoReport = remote.autoReport;
-      this.data._meta.lastLocalUpdate = remote._meta.lastLocalUpdate;
+
+      const mergeArray = (localArr, remoteArr) => {
+        const result = [];
+        const localMap = new Map(localArr.map(i => [String(i.id), i]));
+        const remoteMap = new Map(remoteArr.map(i => [String(i.id), i]));
+        const deletedMap = this.data._meta.deleted || {};
+        
+        // ก. ตรวจสอบข้อมูลในฝั่งคลาวด์
+        remoteMap.forEach((remoteItem, id) => {
+            if (deletedMap[id]) return; // ข้ามรายการที่ถูกลบไปแล้ว
+            
+            if (localMap.has(id)) {
+                const localItem = localMap.get(id);
+                if (localItem.updatedAt && remoteItem.updatedAt && localItem.updatedAt > remoteItem.updatedAt) {
+                    result.push(localItem);
+                    hasLocalUnsyncedChanges = true;
+                } else {
+                    result.push(remoteItem);
+                }
+            } else {
+                result.push(remoteItem);
+            }
+        });
+        
+        // ข. ตรวจสอบข้อมูลในเครื่องเราที่คลาวด์ไม่มี
+        localMap.forEach((localItem, id) => {
+            if (deletedMap[id]) return; // ถ้ารายการนี้ถูกลบไปแล้ว ไม่ต้องดันขึ้นคลาวด์
+            
+            if (!remoteMap.has(id)) {
+                result.push(localItem);
+                hasLocalUnsyncedChanges = true;
+            }
+        });
+        
+        return result;
+      };
+
+      // ผสานทุกตารางข้อมูล
+      this.data.sales = mergeArray(this.data.sales || [], remote.sales || []);
+      this.data.stockIns = mergeArray(this.data.stockIns || [], remote.stockIns || []);
+      this.data.stockOuts = mergeArray(this.data.stockOuts || [], remote.stockOuts || []);
+      this.data.products = mergeArray(this.data.products || [], remote.products || []);
+      this.data.stores = mergeArray(this.data.stores || [], remote.stores || []);
+      this.data.users = mergeArray(this.data.users || [], remote.users || []);
+      
+      this.data.backupPassword = remote.backupPassword || this.data.backupPassword;
+      if (remote.autoReport && remote._meta.lastLocalUpdate > this.data._meta.lastLocalUpdate) {
+          this.data.autoReport = remote.autoReport;
+      }
+
+      this.data._meta.lastLocalUpdate = Math.max(this.data._meta.lastLocalUpdate, remote._meta.lastLocalUpdate);
       this.data._meta.lastCloudSync = Date.now();
+      
       this.recalculateAllStock();
       this.saveLocal();
       this.refreshCurrentPage();
-      console.log("✅ ข้อมูลทุกอย่างเป็นปัจจุบันแล้ว");
+      
+      return hasLocalUnsyncedChanges;
     },
     
     // 5.6 Push To Cloud
     async pushToCloud() {
       if (!this.firebase?.db) return;
       try {
-        this.data._meta.lastLocalUpdate = Date.now();
+        // บังคับให้เวลาอัปเดตเดินหน้าเสมอ แม้นาฬิกาเครื่องจะเพี้ยน
+        this.data._meta.lastLocalUpdate = Math.max(Date.now(), (this.data._meta.lastLocalUpdate || 0) + 1);
         const dataToSync = JSON.parse(JSON.stringify(this.data));
         await window.firebase_tools_setDoc(this.firebase.db, "pos", "data", dataToSync);
         this.data._meta.lastCloudSync = Date.now();
@@ -1058,7 +1136,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const remoteData = snapshot.data;
             if (remoteData._meta?.lastLocalUpdate > this.data._meta.lastLocalUpdate) {
               console.log("⚡ Received update from Cloud (Realtime)");
-              this.mergeFromCloud(remoteData);
+              const hasUnsynced = this.mergeFromCloud(remoteData);
+              if (hasUnsynced) {
+                 // หากเครื่องเรามีข้อมูลค้างอยู่ (ขายออฟไลน์ไว้) ให้ดันไปสมทบบนคลาวด์
+                 this.pushToCloud();
+              }
             }
           }
         }
@@ -1087,11 +1169,11 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // 5.9 Manual Save To Browser
     manualSaveToBrowser() {
-      this.data._meta.lastLocalUpdate = Date.now();
+      // บังคับให้เวลาอัปเดตเดินหน้าเสมอ แม้นาฬิกาเครื่องจะเพี้ยน
+      this.data._meta.lastLocalUpdate = Math.max(Date.now(), (this.data._meta.lastLocalUpdate || 0) + 1);
       this.saveLocal();
       this.showToast("📥 บันทึกข้อมูล Snapshot ลงเบราว์เซอร์สำเร็จ (LocalStorage)", "success");
     },
-
     // =================================================================
     // 6. ENCRYPTION & DECRYPTION (Backup System)
     // =================================================================
@@ -1392,12 +1474,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (modal) modal.style.display = 'none';
     },
     
-    // 7.10 Process Date Range Export
+// 7.10 Process Date Range Export
     processDateRangeExport() {
       const startDate = document.getElementById('exportStartDate')?.value;
       const endDate = document.getElementById('exportEndDate')?.value;
       const includeCarryForwardCheckbox = document.getElementById('exportIncludeCarryForward');
       const includeCarryForward = includeCarryForwardCheckbox ? includeCarryForwardCheckbox.checked : false;
+
       if (!startDate || !endDate) {
         alert("กรุณาเลือกช่วงวันที่ให้ครบถ้วน");
         return;
@@ -1406,22 +1489,36 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด");
         return;
       }
+
+      // ดึงข้อมูลทั้งหมด
       const allSales = this.data.sales || [];
+      const allStockIns = this.data.stockIns || [];
+      const allStockOuts = this.data.stockOuts || [];
+
+      // 1. คัดกรองรายการที่อยู่ในช่วงเวลาที่กำหนด
       const filteredSales = allSales.filter(sale => {
-        const saleDate = sale.date ? sale.date.split('T')[0] : '';
-        return saleDate >= startDate && saleDate <= endDate;
+        const d = sale.date ? sale.date.split('T')[0] : '';
+        return d >= startDate && d <= endDate;
       });
-      if (filteredSales.length === 0) {
-        alert(startDate === endDate ? `ไม่มีรายการขายในวันที่ ${this.formatDateForDisplay(startDate)}` : `ไม่มีรายการขายในช่วงวันที่ ${this.formatDateForDisplay(startDate)} ถึง ${this.formatDateForDisplay(endDate)}`);
-        this.closeSingleDateExportModal();
-        return;
-      }
+      const filteredStockIns = allStockIns.filter(si => {
+        const d = si.date ? si.date.split('T')[0] : '';
+        return d >= startDate && d <= endDate;
+      });
+      const filteredStockOuts = allStockOuts.filter(so => {
+        const d = so.date ? so.date.split('T')[0] : '';
+        return d >= startDate && d <= endDate;
+      });
+
       let carryForwardData = { totalSales: 0, totalProfit: 0, bySeller: {} };
+      let carryForwardStockIns = []; // ตัวแปรเก็บรายการ "ยอดยกมา"
+
       if (includeCarryForward) {
+        // 2. คำนวณยอดขายและกำไรยกมา (ก่อน startDate)
         const priorSales = allSales.filter(sale => {
-          const saleDate = sale.date ? sale.date.split('T')[0] : '';
-          return saleDate < startDate;
+          const d = sale.date ? sale.date.split('T')[0] : '';
+          return d < startDate;
         });
+
         priorSales.forEach(sale => {
           carryForwardData.totalSales += sale.total;
           carryForwardData.totalProfit += sale.profit;
@@ -1430,19 +1527,85 @@ document.addEventListener("DOMContentLoaded", () => {
           carryForwardData.bySeller[sellerId].sales += sale.total;
           carryForwardData.bySeller[sellerId].profit += sale.profit;
         });
+
+        // 3. คำนวณสต็อกยกมา (ก่อน startDate) แบบชิ้นต่อชิ้น
+        const priorStockIns = allStockIns.filter(si => (si.date ? si.date.split('T')[0] : '') < startDate);
+        const priorStockOuts = allStockOuts.filter(so => (so.date ? so.date.split('T')[0] : '') < startDate);
+        const priorStockMap = new Map();
+
+        // 3.1 บวกยอดนำเข้าเดิม (แปลง ID เป็น String ป้องกัน Type mismatch)
+        priorStockIns.forEach(si => {
+          const pId = String(si.productId);
+          const current = priorStockMap.get(pId) || { qty: 0, cost: si.costPerUnit };
+          priorStockMap.set(pId, { qty: current.qty + si.quantity, cost: si.costPerUnit });
+        });
+        
+        // 3.2 ลบด้วยยอดขายเดิม
+        priorSales.forEach(sale => {
+          sale.items.forEach(item => {
+            const pId = String(item.productId);
+            // กรณีไม่มีสต็อกมาก่อนแต่มีการขาย ให้ตั้งค่าเริ่มต้นเป็น 0 แล้วลบยอดออก (ยอดติดลบ)
+            const current = priorStockMap.get(pId) || { qty: 0, cost: item.cost };
+            current.qty -= item.quantity;
+            priorStockMap.set(pId, current);
+          });
+        });
+        
+        // 3.3 ลบด้วยยอดปรับออกเดิม
+        priorStockOuts.forEach(so => {
+          const pId = String(so.productId);
+          const current = priorStockMap.get(pId) || { qty: 0, cost: 0 };
+          current.qty -= so.quantity;
+          priorStockMap.set(pId, current);
+        });
+
+        // 4. สร้าง Record "ยอดยกมา" จำลองเข้าไปในฐานข้อมูล StockIn ขาเข้า
+        const virtualDate = new Date(startDate);
+        virtualDate.setHours(0, 0, 0, 0);
+        const virtualDateStr = virtualDate.toISOString();
+        
+        let counter = 0;
+        priorStockMap.forEach((data, pId) => {
+          if (data.qty !== 0) { // ถ้ายอดคงเหลือไม่เป็นศูนย์ (เป็นบวกหรือติดลบก็นำไปคำนวณหมด)
+            const product = this.data.products.find(p => String(p.id) === pId);
+            if (product) {
+              carryForwardStockIns.push({
+                id: Date.now() + counter++, // ป้องกัน ID ซ้ำ
+                date: virtualDateStr,
+                productId: product.id, // คืนค่า ID เป็นชนิดข้อมูลดั้งเดิม
+                productName: `[ยอดยกมา] ${product.name}`,
+                quantity: data.qty,
+                costPerUnit: data.cost || product.costPrice || 0,
+                reason: "ยอดยกมาจากรอบก่อนหน้า"
+              });
+            }
+          }
+        });
       }
-      const defaultFileName = startDate === endDate ? `รายการขายวันที่_${this.formatDateForDisplay(startDate)}` : `รายการขายช่วงวันที่_${this.formatDateForDisplay(startDate)}_ถึง_${this.formatDateForDisplay(endDate)}`;
+
+      // เช็คว่ามีข้อมูลที่ต้องการบันทึกหรือไม่
+      if (filteredSales.length === 0 && (!includeCarryForward || carryForwardStockIns.length === 0)) {
+        alert(startDate === endDate ? `ไม่มีข้อมูลรายการในวันที่ ${this.formatDateForDisplay(startDate)}` : `ไม่มีข้อมูลรายการในช่วงวันที่ ${this.formatDateForDisplay(startDate)} ถึง ${this.formatDateForDisplay(endDate)}`);
+        this.closeSingleDateExportModal();
+        return;
+      }
+
+      // รวมรายการ "ยอดยกมา" เข้ากับ "รายการนำเข้าที่เกิดขึ้นจริงในช่วงเวลา"
+      const finalStockIns = includeCarryForward ? [...carryForwardStockIns, ...filteredStockIns] : filteredStockIns;
+
+      const defaultFileName = startDate === endDate ? `ข้อมูลยกยอดวันที่_${this.formatDateForDisplay(startDate)}` : `ข้อมูลยกยอดช่วง_${this.formatDateForDisplay(startDate)}_ถึง_${this.formatDateForDisplay(endDate)}`;
       let fileName = prompt("กรุณากรอกชื่อไฟล์สำหรับบันทึกข้อมูล (ไม่ต้องใส่นามสกุล):", defaultFileName);
       if (!fileName) {
         this.closeSingleDateExportModal();
         return;
       }
+
       const backupData = {
         users: this.data.users || [],
         products: this.data.products || [],
         sales: filteredSales,
-        stockIns: this.data.stockIns || [],
-        stockOuts: this.data.stockOuts || [],
+        stockIns: finalStockIns,
+        stockOuts: filteredStockOuts,
         stores: this.data.stores || [],
         backupPassword: this.data.backupPassword,
         _meta: this.data._meta,
@@ -1452,10 +1615,10 @@ document.addEventListener("DOMContentLoaded", () => {
         endDate: endDate,
         carryForward: includeCarryForward ? carryForwardData : null
       };
+
       this.handleDateRangeExportAs('json', fileName, backupData);
       this.closeSingleDateExportModal();
     },
-    
     // 7.11 Handle Date Range Export As
     handleDateRangeExportAs(format, fileName, backupData) {
       if (format === 'json') {
@@ -1563,7 +1726,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("resetModal").style.display = "none";
     },
     
-    // 8.5 Handle Selective Reset
+// 8.5 Handle Selective Reset
     handleSelectiveReset() {
       const resetSales = document.getElementById("reset-sales-checkbox")?.checked;
       const resetStockIns = document.getElementById("reset-stockins-checkbox")?.checked;
@@ -1571,17 +1734,40 @@ document.addEventListener("DOMContentLoaded", () => {
       const resetProducts = document.getElementById("reset-products-checkbox")?.checked;
       const resetSellers = document.getElementById("reset-sellers-checkbox")?.checked;
       const resetStores = document.getElementById("reset-stores-checkbox")?.checked;
+
       if (!resetSales && !resetStockIns && !resetStockOuts && !resetProducts && !resetSellers && !resetStores) {
         this.showToast("กรุณาเลือกส่วนที่ต้องการรีเซ็ตอย่างน้อย 1 ส่วน", "warning");
         return;
       }
+      
       if (confirm("🚨 คำเตือนวิกฤต: คุณแน่ใจหรือไม่ที่จะล้างข้อมูลส่วนที่เลือก? การกระทำนี้ไม่สามารถย้อนกลับได้!")) {
-        if (resetSales) this.data.sales = [];
-        if (resetStockIns) this.data.stockIns = [];
-        if (resetStockOuts) this.data.stockOuts = [];
-        if (resetProducts) this.data.products = [];
-        if (resetStores) this.data.stores = [];
-        if (resetSellers) this.data.users = this.data.users.filter(u => u.role === "admin" || u.id === "static-admin-id-001");
+        if (resetSales) {
+            this.data.sales.forEach(s => this._markAsDeleted(s.id));
+            this.data.sales = [];
+        }
+        if (resetStockIns) {
+            this.data.stockIns.forEach(s => this._markAsDeleted(s.id));
+            this.data.stockIns = [];
+        }
+        if (resetStockOuts) {
+            this.data.stockOuts.forEach(s => this._markAsDeleted(s.id));
+            this.data.stockOuts = [];
+        }
+        if (resetProducts) {
+            this.data.products.forEach(p => this._markAsDeleted(p.id));
+            this.data.products = [];
+        }
+        if (resetStores) {
+            this.data.stores.forEach(s => this._markAsDeleted(s.id));
+            this.data.stores = [];
+        }
+        if (resetSellers) {
+            this.data.users.forEach(u => {
+                if (u.role !== "admin" && u.id !== "static-admin-id-001") this._markAsDeleted(u.id);
+            });
+            this.data.users = this.data.users.filter(u => u.role === "admin" || u.id === "static-admin-id-001");
+        }
+        
         this.recalculateAllStock();
         this.saveData();
         this.closeResetModal();
@@ -1589,36 +1775,44 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => location.reload(), 1000);
       }
     },
-
     // =================================================================
     // 9. STOCK MANAGEMENT
     // =================================================================
     
-    // 9.1 Recalculate All Stock
+// 9.1 Recalculate All Stock
     recalculateAllStock() {
       const totalStockIn = new Map();
       const totalSold = new Map();
       const totalStockOut = new Map();
+      
       this.data.stockIns.forEach((si) => {
-        const currentQty = totalStockIn.get(si.productId) || 0;
-        totalStockIn.set(si.productId, currentQty + si.quantity);
+        const pId = String(si.productId);
+        const currentQty = totalStockIn.get(pId) || 0;
+        totalStockIn.set(pId, currentQty + si.quantity);
       });
+      
       this.data.sales.forEach((sale) => {
         sale.items.forEach((item) => {
-          const currentQty = totalSold.get(item.productId) || 0;
-          totalSold.set(item.productId, currentQty + item.quantity);
+          const pId = String(item.productId);
+          const currentQty = totalSold.get(pId) || 0;
+          totalSold.set(pId, currentQty + item.quantity);
         });
       });
+      
       this.data.stockOuts.forEach((so) => {
-        const currentQty = totalStockOut.get(so.productId) || 0;
-        totalStockOut.set(so.productId, currentQty + so.quantity);
+        const pId = String(so.productId);
+        const currentQty = totalStockOut.get(pId) || 0;
+        totalStockOut.set(pId, currentQty + so.quantity);
       });
+      
       this.data.products.forEach((product) => {
-        const initialStock = totalStockIn.get(product.id) || 0;
-        const soldQty = totalSold.get(product.id) || 0;
-        const stockOutQty = totalStockOut.get(product.id) || 0;
+        const pId = String(product.id);
+        const initialStock = totalStockIn.get(pId) || 0;
+        const soldQty = totalSold.get(pId) || 0;
+        const stockOutQty = totalStockOut.get(pId) || 0;
         product.stock = initialStock - soldQty - stockOutQty;
       });
+      
       console.log("Stock recalculated for all products based on history.");
     },
     
@@ -1785,12 +1979,13 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("stock-in-time").value = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     },
     
-    // 9.8 Delete Stock In
+// 9.8 Delete Stock In
     deleteStockIn(id) {
       if (!confirm("คุณแน่ใจว่าต้องการลบรายการนำเข้านี้? (ระบบจะหักสต็อกสินค้าตัวนี้คืน)")) return;
       const targetId = parseInt(id, 10);
       const index = this.data.stockIns.findIndex(si => si.id === targetId);
       if (index > -1) {
+        this._markAsDeleted(targetId);
         const record = this.data.stockIns[index];
         const product = this.data.products.find(p => p.id === record.productId);
         if (product) product.stock -= record.quantity;
@@ -1929,12 +2124,13 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("stock-out-time").value = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     },
     
-    // 9.13 Delete Stock Out
+// 9.13 Delete Stock Out
     deleteStockOut(id) {
       if (!confirm("คุณแน่ใจว่าต้องการลบรายการปรับยอดนี้? (ระบบจะบวกสต็อกสินค้าคืนให้)")) return;
       const targetId = parseInt(id, 10);
       const index = this.data.stockOuts.findIndex(so => so.id === targetId);
       if (index > -1) {
+        this._markAsDeleted(targetId);
         const record = this.data.stockOuts[index];
         const product = this.data.products.find(p => p.id === record.productId);
         if (product) product.stock += record.quantity;
@@ -2056,9 +2252,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
     
-    // 10.4 Delete Product
+// 10.4 Delete Product
     deleteProduct(id) {
       if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้? การกระทำนี้จะลบสินค้าออกจากระบบ แต่จะไม่ลบประวัติการขายหรือการนำเข้าที่เกี่ยวข้อง")) {
+        this._markAsDeleted(id);
         this.data.products = this.data.products.filter((p) => p.id != id);
         this.saveData();
         this.renderProductTable();
@@ -2121,7 +2318,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
     
-    // 11.4 Delete Store
+// 11.4 Delete Store
     deleteStore(id) {
       const isStoreInUse = this.data.users.some((u) => u.storeId == id);
       if (isStoreInUse) {
@@ -2129,6 +2326,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบร้านค้านี้?")) {
+        this._markAsDeleted(id);
         this.data.stores = this.data.stores.filter((s) => s.id != id);
         this.saveData();
         this.renderStoreTable();
@@ -2285,7 +2483,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (user) this.setupUserForm(user);
     },
     
-    // 12.4 Delete User
+// 12.4 Delete User
     deleteUser(id) {
       const user = this.data.users.find((u) => u.id == id);
       if (user && user.username === "admin") {
@@ -2293,6 +2491,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้ ${user.username}?`)) {
+        this._markAsDeleted(id);
         this.data.users = this.data.users.filter((u) => u.id != id);
         this.saveData();
         this.renderUserTable();
@@ -2385,16 +2584,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // 13. POS (POINT OF SALE)
     // =================================================================
     
-    // 13.1 Render POS
+// 13.1 Render POS
     renderPos(payload = null) {
       this.editingSaleContext = null;
       const productSelect = document.getElementById("pos-product");
       if (!productSelect) return;
       let availableProducts = this.data.products;
+      
       if (this.currentUser.role === "seller") {
         const assignedIds = this.currentUser.assignedProductIds || [];
-        availableProducts = availableProducts.filter((p) => assignedIds.includes(p.id));
+        // แปลง ID เป็น String ก่อนตรวจสอบ
+        availableProducts = availableProducts.filter((p) => assignedIds.map(String).includes(String(p.id)));
       }
+      
       const productsInStock = availableProducts.filter((p) => p.stock > 0);
       if (this.currentUser.role === "seller" && productsInStock.length === 1) {
         const singleProduct = productsInStock[0];
@@ -2785,7 +2987,7 @@ document.addEventListener("DOMContentLoaded", () => {
       this.showPage("page-pos", saleToEdit);
     },
     
-    // 14.4 Delete Sale
+// 14.4 Delete Sale
     deleteSale(saleId, isEditing = false) {
       const saleIndex = this.data.sales.findIndex((s) => s.id == saleId);
       if (saleIndex === -1) {
@@ -2793,6 +2995,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
       }
       if (!isEditing && !confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการขายนี้? สต็อกสินค้าจะถูกคืนเข้าระบบ")) return null;
+      
+      this._markAsDeleted(saleId);
       const [saleToDelete] = this.data.sales.splice(saleIndex, 1);
       saleToDelete.items.forEach((item) => {
         const product = this.data.products.find((p) => p.id === item.productId);

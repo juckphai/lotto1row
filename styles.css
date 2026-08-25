@@ -1,3 +1,7 @@
+/* ============================================
+   1. ROOT VARIABLES & GLOBAL STYLES
+   ============================================ */
+
 :root {
     --primary-color: #4a90e2;
     --danger-color: #d0021b;
@@ -26,7 +30,10 @@ body {
     text-size-adjust: 100%;
 }
 
-/* Main Layout */
+/* ============================================
+   2. MAIN LAYOUT
+   ============================================ */
+
 .main-wrapper {
     max-width: 900px;
     margin: 5px auto;
@@ -38,7 +45,10 @@ body {
     width: 98%;
 }
 
-/* Login Screen */
+/* ============================================
+   3. LOGIN SCREEN
+   ============================================ */
+
 #login-screen {
     padding: 20px;
     text-align: center;
@@ -137,7 +147,10 @@ body {
     color: var(--text-color);
 }
 
-/* Top Bar */
+/* ============================================
+   4. TOP BAR (HEADER)
+   ============================================ */
+
 .top-bar {
     background-color: var(--primary-color);
     color: white;
@@ -157,16 +170,42 @@ body {
     color: #FFD700 !important;
 }
 
+/* ============================================
+   4.1 USER INFO CONTAINER (ปรับปรุงให้อยู่บรรทัดเดียวกัน)
+   ============================================ */
+
 #user-info-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    font-size: 0.85em;
-    color: white;
+    display: flex !important;
+    flex-wrap: nowrap !important;      /* ห้ามขึ้นบรรทัดใหม่ */
+    align-items: center !important;
+    justify-content: flex-end !important; /* จัดให้ชิดขวา */
+    gap: 6px !important;              /* ระยะห่างระหว่างองค์ประกอบ */
+    white-space: nowrap !important;    /* ห้ามข้อความตัดบรรทัด */
+    overflow-x: auto !important;       /* ถ้าคับเกินไปให้เลื่อนแนวนอนได้ */
+    font-size: 0.8rem !important;      /* ลดขนาดตัวอักษรให้พอดีบนมือถือ */
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
 }
 
+/* ปรับแต่งข้อความชื่อผู้ใช้ */
+#user-info {
+    flex-shrink: 0 !important;
+    font-size: 0.7rem !important;
+    white-space: nowrap !important;
+}
+
+/* ปุ่มใน Top Bar */
+#user-info-container button {
+    flex-shrink: 0 !important;         /* ปุ่มไม่หดตัว */
+    padding: 4px 10px !important;
+    font-size: 0.7rem !important;      /* ตัวอักษรเล็กลง */
+    white-space: nowrap !important;
+    border-radius: 12px !important;
+    min-height: 28px !important;
+    line-height: 1.2 !important;
+}
+
+/* ปุ่มออกจากระบบ */
 #logout-btn {
     background-color: var(--danger-color);
     border: none;
@@ -181,7 +220,25 @@ body {
     background-color: #b90218;
 }
 
-/* Section Headers */
+/* ปุ่มซิงค์ข้อมูล */
+#sync-data-btn {
+    background-color: #28a745;
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#sync-data-btn:hover {
+    background-color: #1e7e34;
+}
+
+/* ============================================
+   5. SECTION HEADERS
+   ============================================ */
+
 .section-header {
     color: white;
     padding: 8px 12px;
@@ -249,7 +306,10 @@ body {
 .header-auto-report { background-color: #ff5722; }
 .header-data { background-color: #607d8b; }
 
-/* Section Content */
+/* ============================================
+   6. SECTION CONTENT
+   ============================================ */
+
 .section-content {
     display: none;
     padding: 10px;
@@ -264,7 +324,10 @@ body {
     display: block;
 }
 
-/* Collapsible Bar */
+/* ============================================
+   7. COLLAPSIBLE BAR
+   ============================================ */
+
 .collapsible-bar {
     background-color: #78909c;
     color: white;
@@ -307,7 +370,10 @@ body {
     display: block;
 }
 
-/* Typography */
+/* ============================================
+   8. TYPOGRAPHY
+   ============================================ */
+
 h2 {
     text-align: center;
     color: var(--text-color);
@@ -318,7 +384,10 @@ h2 {
     padding-bottom: 5px;
 }
 
-/* Tables */
+/* ============================================
+   9. TABLES
+   ============================================ */
+
 .table-container {
     overflow-x: auto;
     border: 1px solid var(--border-color);
@@ -393,7 +462,10 @@ th {
     margin-top: 3px;
 }
 
-/* Forms */
+/* ============================================
+   10. FORMS
+   ============================================ */
+
 form {
     display: grid;
     grid-template-columns: 150px 1fr;
@@ -480,7 +552,10 @@ button#toggle-special-price-btn:hover {
     background-color: #d8901e;
 }
 
-/* POS Layout */
+/* ============================================
+   11. POS (POINT OF SALE)
+   ============================================ */
+
 #page-pos .pos-layout {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -533,7 +608,80 @@ button#toggle-special-price-btn:hover {
     color: var(--text-color);
 }
 
-/* Report Filter Form */
+/* Special Price Section */
+#page-pos #pos-product.single-product-seller:disabled {
+    background-color: var(--success-color);
+    color: white;
+    font-weight: bold;
+    opacity: 1;
+    cursor: default;
+    border: 2px solid #1e7e34;
+}
+
+/* Date/Time Groups */
+#page-pos #add-to-cart-form .date-time-group,
+#stock-in-form .date-time-group,
+#stock-out-form .date-time-group {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 5px !important;
+    grid-column: 2 / -1;
+    width: 100% !important;
+}
+
+#page-pos #add-to-cart-form .date-time-group input,
+#stock-in-form .date-time-group input,
+#stock-out-form .date-time-group input {
+    flex: 1 1 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    font-size: clamp(0.75rem, 1vw, 0.9em) !important;
+    padding: 0 5px !important;
+    text-align: center !important;
+    height: 38px !important;
+    line-height: normal !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Product Quantity Group */
+#page-pos #add-to-cart-form .product-quantity-group {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 3px !important;
+    width: 100% !important;
+    grid-column: 1 / -1 !important;
+    flex-wrap: nowrap !important;
+}
+
+#page-pos #add-to-cart-form .product-quantity-group select,
+#page-pos #add-to-cart-form .product-quantity-group input {
+    flex: 1 1 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    font-size: clamp(0.75rem, 1vw, 0.9em) !important;
+    padding: 0 6px !important;
+    text-align: center !important;
+    height: 38px !important;
+    line-height: normal !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#page-pos #add-to-cart-form .product-quantity-group select {
+    flex: 8.5 !important;
+}
+
+#page-pos #add-to-cart-form .product-quantity-group input {
+    flex: 1.5 !important;
+}
+
+/* ============================================
+   12. REPORT FILTER FORM
+   ============================================ */
+
 #report-filter-form {
     display: grid;
     grid-template-columns: auto auto auto 1fr;
@@ -555,7 +703,10 @@ button#toggle-special-price-btn:hover {
     max-width: 150px;
 }
 
-/* Sales History Export Form */
+/* ============================================
+   13. SALES HISTORY EXPORT FORM
+   ============================================ */
+
 #sales-history-export-form {
     display: flex;
     flex-wrap: wrap;
@@ -608,7 +759,10 @@ button#toggle-special-price-btn:hover {
     transform: translateY(0);
 }
 
-/* Data Management Section */
+/* ============================================
+   14. DATA MANAGEMENT SECTION
+   ============================================ */
+
 .data-management-section {
     border: 1px solid var(--border-color);
     padding: 10px;
@@ -631,7 +785,10 @@ button#toggle-special-price-btn:hover {
     padding: 8px 12px;
 }
 
-/* Summary Section */
+/* ============================================
+   15. SUMMARY SECTION
+   ============================================ */
+
 .summary-section {
     border: 1px solid #0088ff;
     border-radius: 6px;
@@ -649,7 +806,425 @@ button#toggle-special-price-btn:hover {
     color: var(--text-color);
 }
 
-/* Toast Notification */
+/* ============================================
+   16. REPORT ACTION BUTTONS
+   ============================================ */
+
+.report-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.report-action-item {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 15px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.report-action-item p {
+    margin-top: 0;
+    margin-bottom: 8px;
+    flex-grow: 1;
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+.report-action-item button {
+    width: 100%;
+    padding: 10px;
+    font-size: 1.0em;
+    font-weight: bold;
+}
+
+#admin-report-filters .summary-form-inline label {
+    text-align: right;
+    font-weight: bold;
+    flex-shrink: 0;
+    color: var(--text-color);
+}
+
+#admin-report-filters .summary-form-inline select,
+#admin-report-filters .summary-form-inline input {
+    flex-grow: 1;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border: 1px solid #666;
+}
+
+/* ============================================
+   17. BACKUP PASSWORD FORM
+   ============================================ */
+
+#page-data #backup-password-form {
+    grid-template-columns: 1fr;
+    max-width: 350px !important;
+    margin: 10px auto 10px auto !important;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--background-alt);
+    gap: 10px;
+}
+
+#page-data #backup-password-form .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
+    grid-column: 1 / -1;
+}
+
+#page-data #backup-password-form label {
+    text-align: left !important;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+#page-data #backup-password-form input[type="password"] {
+    width: 100% !important;
+    max-width: none !important;
+    text-align: left !important;
+    padding: 8px 10px !important;
+}
+
+/* ============================================
+   18. USER FORM
+   ============================================ */
+
+#page-users #user-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: 900px;
+    margin: 0 auto 15px auto;
+    background-color: var(--background-alt);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    color: var(--text-color);
+}
+
+#page-users #user-form .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    grid-column: span 1;
+}
+
+#page-users #user-form .user-two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    grid-column: 1 / -1;
+}
+
+#page-users #user-form label {
+    text-align: right;
+    font-weight: bold;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    color: var(--text-color);
+    white-space: nowrap;
+}
+
+#page-users #user-form input,
+#page-users #user-form select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid #666;
+    font-size: 0.95em;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    text-align: left;
+}
+
+#page-users #user-form input:focus,
+#page-users #user-form select:focus {
+    border-color: #4a90e2;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+}
+
+#page-users #user-form .field-group label {
+    text-align: left;
+}
+
+#page-users #user-form .form-group {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+}
+
+#page-users #user-form #user-commission-sources {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    padding: 10px;
+    background: #e9f7fe;
+    border-radius: 6px;
+    border: 1px solid #b8e2f5;
+}
+
+#page-users #user-form #user-commission-sources label {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    font-weight: normal;
+    margin-bottom: 0;
+    cursor: pointer;
+    padding: 3px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    color: var(--text-color);
+    white-space: nowrap;
+}
+
+#page-users #user-form #user-commission-sources label:hover {
+    background-color: rgba(74, 144, 226, 0.1);
+}
+
+#page-users #user-form #user-commission-sources input {
+    width: auto;
+    margin-right: 6px;
+    text-align: left;
+}
+
+#page-users #user-form .form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+#page-users #user-form .form-actions button {
+    min-width: 120px;
+    padding: 10px 15px;
+    font-weight: bold;
+}
+
+#page-users #user-form #user-product-assignment {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    gap: 8px !important;
+    padding: 10px;
+    background: #e9f7fe;
+    border-radius: 6px;
+    border: 1px solid #b8e2f5;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+#page-users #user-form #user-product-assignment label {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 5px;
+    font-weight: normal;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#page-users #user-form #user-product-assignment label:hover {
+    background-color: rgba(74, 144, 226, 0.1);
+}
+
+#page-users #user-form #user-product-assignment input[type="checkbox"] {
+    width: auto !important;
+    margin: 0 !important;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   19. USER TABLE
+   ============================================ */
+
+#page-users .table-container {
+    margin-top: 15px;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #666;
+    background-color: var(--background-color);
+}
+
+#page-users #user-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#page-users #user-table thead {
+    display: table-header-group !important;
+    background-color: #4a90e2 !important;
+    border-bottom: 3px solid #3a7bc8 !important;
+}
+
+#page-users #user-table th {
+    background-color: #4a90e2 !important;
+    color: #ffffff !important;
+    font-weight: bold !important;
+    font-size: 1rem !important;
+    padding: 12px 10px !important;
+    text-align: center !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+#page-users #user-table tbody tr {
+    transition: none;
+    background-color: var(--background-color);
+    border-bottom: 1px solid #e0e0e0;
+}
+
+#page-users #user-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+#page-users #user-table tbody tr:hover {
+    background-color: #eef5ff;
+}
+
+#page-users #user-table td {
+    padding: 10px 10px;
+    border: none;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+    color: var(--text-color);
+    text-align: center;
+}
+
+#page-users #user-table .action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    min-width: 120px;
+}
+
+#page-users #user-table .action-buttons button {
+    padding: 6px 12px;
+    font-size: 0.85em;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+#page-users #user-table .action-buttons button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   20. SCAN BARCODE BUTTON
+   ============================================ */
+
+#scan-barcode-form button {
+    background-color: #007bff !important;
+    color: white !important;
+    border: 1px solid #0056b3;
+    border-radius: 6px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+#scan-barcode-form button:hover {
+    background-color: #0056b3 !important;
+    transform: translateY(-1px);
+}
+
+#scan-barcode-form button:active {
+    transform: translateY(0);
+}
+
+/* ============================================
+   21. DATE/TIME INPUTS
+   ============================================ */
+
+input[type="date"],
+input[type="time"] {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 16px !important;
+    line-height: normal !important;
+}
+
+@media (min-width: 769px) {
+    input[type="date"],
+    input[type="time"] {
+        padding: 6px 10px !important;
+        cursor: pointer;
+    }
+}
+
+/* ============================================
+   22. FOOTER
+   ============================================ */
+
+.app-footer {
+    text-align: center;
+    padding: 15px 0 10px 0;
+    margin-top: 10px;
+    border-top: 1px solid #eee;
+    color: var(--text-color-light);
+    font-size: 0.85rem;
+    width: 100%;
+}
+
+/* ============================================
+   23. SHARE BUTTON
+   ============================================ */
+
+#shareSummaryImageBtn {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+#shareSummaryImageBtn:hover {
+    opacity: 0.9;
+}
+
+/* ============================================
+   24. ONLINE STATUS
+   ============================================ */
+
+.online-status {
+    width: 8px !important;
+    height: 8px !important;
+    background-color: #ccc;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 4px !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 0 2px #000;
+}
+
+.online-status.active {
+    background-color: #00ff00;
+    box-shadow: 0 0 5px #00ff00;
+}
+
+.online-status.error {
+    background-color: #ff0000;
+}
+
+/* ============================================
+   25. TOAST NOTIFICATION
+   ============================================ */
+
 #toast-notification {
     position: fixed;
     bottom: 15px;
@@ -672,7 +1247,10 @@ button#toggle-special-price-btn:hover {
     visibility: visible;
 }
 
-/* Modals */
+/* ============================================
+   26. MODALS
+   ============================================ */
+
 .modal-overlay {
     position: fixed;
     z-index: 1000;
@@ -855,7 +1433,10 @@ button#toggle-special-price-btn:hover {
     background-color: #0074D4;
 }
 
-/* Reset Modal */
+/* ============================================
+   27. RESET MODAL
+   ============================================ */
+
 #reset-modal-content {
     background-color: var(--background-color);
     padding: 15px 20px;
@@ -900,464 +1481,10 @@ button#toggle-special-price-btn:hover {
     margin-top: 10px;
 }
 
-/* Special Price Section */
-#page-pos #pos-product.single-product-seller:disabled {
-    background-color: var(--success-color);
-    color: white;
-    font-weight: bold;
-    opacity: 1;
-    cursor: default;
-    border: 2px solid #1e7e34;
-}
+/* ============================================
+   28. AUTO REPORT SETTINGS
+   ============================================ */
 
-/* Date/Time Groups */
-#page-pos #add-to-cart-form .date-time-group,
-#stock-in-form .date-time-group,
-#stock-out-form .date-time-group {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 5px !important;
-    grid-column: 2 / -1;
-    width: 100% !important;
-}
-
-#page-pos #add-to-cart-form .date-time-group input,
-#stock-in-form .date-time-group input,
-#stock-out-form .date-time-group input {
-    flex: 1 1 0 !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    font-size: clamp(0.75rem, 1vw, 0.9em) !important;
-    padding: 0 5px !important;
-    text-align: center !important;
-    height: 38px !important;
-    line-height: normal !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-}
-
-/* Product Quantity Group */
-#page-pos #add-to-cart-form .product-quantity-group {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 3px !important;
-    width: 100% !important;
-    grid-column: 1 / -1 !important;
-    flex-wrap: nowrap !important;
-}
-
-#page-pos #add-to-cart-form .product-quantity-group select,
-#page-pos #add-to-cart-form .product-quantity-group input {
-    flex: 1 1 0 !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    font-size: clamp(0.75rem, 1vw, 0.9em) !important;
-    padding: 0 6px !important;
-    text-align: center !important;
-    height: 38px !important;
-    line-height: normal !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-}
-
-#page-pos #add-to-cart-form .product-quantity-group select {
-    flex: 8.5 !important;
-}
-
-#page-pos #add-to-cart-form .product-quantity-group input {
-    flex: 1.5 !important;
-}
-
-/* Report Action Buttons */
-.report-action-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.report-action-item {
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 10px 15px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background-color: var(--background-color);
-    color: var(--text-color);
-}
-
-.report-action-item p {
-    margin-top: 0;
-    margin-bottom: 8px;
-    flex-grow: 1;
-    font-size: 0.9em;
-    color: var(--text-color);
-}
-
-.report-action-item button {
-    width: 100%;
-    padding: 10px;
-    font-size: 1.0em;
-    font-weight: bold;
-}
-
-#admin-report-filters .summary-form-inline label {
-    text-align: right;
-    font-weight: bold;
-    flex-shrink: 0;
-    color: var(--text-color);
-}
-
-#admin-report-filters .summary-form-inline select,
-#admin-report-filters .summary-form-inline input {
-    flex-grow: 1;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    border: 1px solid #666;
-}
-
-/* Backup Password Form */
-#page-data #backup-password-form {
-    grid-template-columns: 1fr;
-    max-width: 350px !important;
-    margin: 10px auto 10px auto !important;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background-color: var(--background-alt);
-    gap: 10px;
-}
-
-#page-data #backup-password-form .form-group {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 3px;
-    grid-column: 1 / -1;
-}
-
-#page-data #backup-password-form label {
-    text-align: left !important;
-    font-weight: bold;
-    margin-bottom: 0;
-}
-
-#page-data #backup-password-form input[type="password"] {
-    width: 100% !important;
-    max-width: none !important;
-    text-align: left !important;
-    padding: 8px 10px !important;
-}
-
-/* User Form */
-#page-users #user-form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    max-width: 900px;
-    margin: 0 auto 15px auto;
-    background-color: var(--background-alt);
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    color: var(--text-color);
-}
-
-#page-users #user-form .field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    grid-column: span 1;
-}
-
-#page-users #user-form .user-two-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    grid-column: 1 / -1;
-}
-
-#page-users #user-form label {
-    text-align: right;
-    font-weight: bold;
-    margin-bottom: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    color: var(--text-color);
-    white-space: nowrap;
-}
-
-#page-users #user-form input,
-#page-users #user-form select {
-    width: 100%;
-    padding: 8px 10px;
-    border-radius: 4px;
-    border: 1px solid #666;
-    font-size: 0.95em;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    text-align: left;
-}
-
-#page-users #user-form input:focus,
-#page-users #user-form select:focus {
-    border-color: #4a90e2;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
-}
-
-#page-users #user-form .field-group label {
-    text-align: left;
-}
-
-#page-users #user-form .form-group {
-    grid-column: 1 / -1;
-    margin-top: 8px;
-}
-
-#page-users #user-form #user-commission-sources {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 8px;
-    padding: 10px;
-    background: #e9f7fe;
-    border-radius: 6px;
-    border: 1px solid #b8e2f5;
-}
-
-#page-users #user-form #user-commission-sources label {
-    display: flex;
-    align-items: center;
-    text-align: left;
-    font-weight: normal;
-    margin-bottom: 0;
-    cursor: pointer;
-    padding: 3px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-    color: var(--text-color);
-    white-space: nowrap;
-}
-
-#page-users #user-form #user-commission-sources label:hover {
-    background-color: rgba(74, 144, 226, 0.1);
-}
-
-#page-users #user-form #user-commission-sources input {
-    width: auto;
-    margin-right: 6px;
-    text-align: left;
-}
-
-#page-users #user-form .form-actions {
-    grid-column: 1 / -1;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-#page-users #user-form .form-actions button {
-    min-width: 120px;
-    padding: 10px 15px;
-    font-weight: bold;
-}
-
-#page-users #user-form #user-product-assignment {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
-    gap: 8px !important;
-    padding: 10px;
-    background: #e9f7fe;
-    border-radius: 6px;
-    border: 1px solid #b8e2f5;
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-#page-users #user-form #user-product-assignment label {
-    display: flex !important;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 5px;
-    font-weight: normal;
-    transition: background-color 0.2s;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-#page-users #user-form #user-product-assignment label:hover {
-    background-color: rgba(74, 144, 226, 0.1);
-}
-
-#page-users #user-form #user-product-assignment input[type="checkbox"] {
-    width: auto !important;
-    margin: 0 !important;
-    flex-shrink: 0;
-}
-
-/* User Table */
-#page-users .table-container {
-    margin-top: 15px;
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid #666;
-    background-color: var(--background-color);
-}
-
-#page-users #user-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-#page-users #user-table thead {
-    display: table-header-group !important;
-    background-color: #4a90e2 !important;
-    border-bottom: 3px solid #3a7bc8 !important;
-}
-
-#page-users #user-table th {
-    background-color: #4a90e2 !important;
-    color: #ffffff !important;
-    font-weight: bold !important;
-    font-size: 1rem !important;
-    padding: 12px 10px !important;
-    text-align: center !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-#page-users #user-table tbody tr {
-    transition: none;
-    background-color: var(--background-color);
-    border-bottom: 1px solid #e0e0e0;
-}
-
-#page-users #user-table tbody tr:nth-child(even) {
-    background-color: #f8f9fa;
-}
-
-#page-users #user-table tbody tr:hover {
-    background-color: #eef5ff;
-}
-
-#page-users #user-table td {
-    padding: 10px 10px;
-    border: none;
-    border-bottom: 1px solid #e9ecef;
-    vertical-align: middle;
-    color: var(--text-color);
-    text-align: center;
-}
-
-#page-users #user-table .action-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-    min-width: 120px;
-}
-
-#page-users #user-table .action-buttons button {
-    padding: 6px 12px;
-    font-size: 0.85em;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-#page-users #user-table .action-buttons button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* Scan Barcode Button */
-#scan-barcode-form button {
-    background-color: #007bff !important;
-    color: white !important;
-    border: 1px solid #0056b3;
-    border-radius: 6px;
-    font-weight: bold;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.2s, transform 0.1s;
-}
-
-#scan-barcode-form button:hover {
-    background-color: #0056b3 !important;
-    transform: translateY(-1px);
-}
-
-#scan-barcode-form button:active {
-    transform: translateY(0);
-}
-
-/* Date/Time Inputs */
-input[type="date"],
-input[type="time"] {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-    font-size: 16px !important;
-    line-height: normal !important;
-}
-
-@media (min-width: 769px) {
-    input[type="date"],
-    input[type="time"] {
-        padding: 6px 10px !important;
-        cursor: pointer;
-    }
-}
-
-/* Footer */
-.app-footer {
-    text-align: center;
-    padding: 15px 0 10px 0;
-    margin-top: 10px;
-    border-top: 1px solid #eee;
-    color: var(--text-color-light);
-    font-size: 0.85rem;
-    width: 100%;
-}
-
-/* Share Button */
-#shareSummaryImageBtn {
-    background: linear-gradient(135deg, #00c6ff, #0072ff);
-    color: #fff;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-#shareSummaryImageBtn:hover {
-    opacity: 0.9;
-}
-
-/* Online Status */
-.online-status {
-    width: 10px;
-    height: 10px;
-    background-color: #ccc;
-    border-radius: 50%;
-    display: inline-block;
-    margin-left: 8px;
-    box-shadow: 0 0 2px #000;
-}
-
-.online-status.active {
-    background-color: #00ff00;
-    box-shadow: 0 0 5px #00ff00;
-}
-
-.online-status.error {
-    background-color: #ff0000;
-}
-
-/* Auto Report Settings */
 .auto-report-settings {
     max-width: 600px;
     margin: 0 auto;
@@ -1416,7 +1543,25 @@ input[type="time"] {
     border-color: #ddd;
 }
 
-/* Print Styles */
+/* ============================================
+   29. ANIMATIONS
+   ============================================ */
+
+/* Spin animation for sync button */
+@keyframes spin-animation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.spin {
+    display: inline-block;
+    animation: spin-animation 1s linear infinite;
+}
+
+/* ============================================
+   30. PRINT STYLES
+   ============================================ */
+
 @media print {
     body, html {
         background: #fff !important;
@@ -1540,8 +1685,102 @@ input[type="time"] {
 }
 
 /* ============================================
-   RESPONSIVE STYLES (Mobile)
+   31. GRID LAYOUTS FOR EXPORT FORMS
    ============================================ */
+
+#sales-history-export-form,
+#report-filter-form,
+#seller-filter-by-range-div,
+#seller-detailed-report-form .summary-form-inline,
+#seller-credit-report-form .summary-form-inline,
+#seller-transfer-report-form .summary-form-inline,
+#admin-report-filters .summary-form-inline,
+#seller-summary-content .summary-form-inline > div {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    align-items: end !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    justify-content: stretch !important;
+}
+
+#sales-history-export-form label,
+#report-filter-form label,
+#seller-filter-by-range-div label,
+#seller-detailed-report-form .summary-form-inline label,
+#seller-credit-report-form .summary-form-inline label,
+#seller-transfer-report-form .summary-form-inline label,
+#seller-summary-content label {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    margin: 0 !important;
+    text-align: left !important;
+    font-size: 0.9em !important;
+    font-weight: bold !important;
+    color: var(--text-color) !important;
+}
+
+input[type="date"] {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 5px !important;
+    padding: 8px !important;
+    min-width: 0 !important;
+}
+
+#admin-report-filters .summary-form-inline {
+    grid-template-rows: auto auto !important;
+    gap: 2px 10px !important;
+}
+
+#admin-report-filters .summary-form-inline label:nth-of-type(1) {
+    grid-row: 1;
+    grid-column: 1;
+    text-align: left !important;
+    margin-bottom: 0 !important;
+}
+
+#admin-report-filters .summary-form-inline input:nth-of-type(1) {
+    grid-row: 2;
+    grid-column: 1;
+    margin-top: 0 !important;
+}
+
+#admin-report-filters .summary-form-inline label:nth-of-type(2) {
+    grid-row: 1;
+    grid-column: 2;
+    text-align: left !important;
+    margin-bottom: 0 !important;
+}
+
+#admin-report-filters .summary-form-inline input:nth-of-type(2) {
+    grid-row: 2;
+    grid-column: 2;
+    margin-top: 0 !important;
+}
+
+#sales-history-export-form button,
+#report-filter-form button,
+#report-filter-form label:has(select),
+#seller-sales-filter-form button,
+#seller-detailed-report-form .form-actions,
+#seller-credit-report-form .form-actions,
+#seller-transfer-report-form .form-actions {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+}
+
+#report-filter-form select {
+    width: 100% !important;
+}
+
+/* ============================================
+   32. RESPONSIVE STYLES (MOBILE)
+   ============================================ */
+
 @media (max-width: 768px) {
     .main-wrapper {
         width: 100%;
@@ -1673,7 +1912,7 @@ input[type="time"] {
         grid-template-columns: 1fr;
     }
 
-    /* Table adjustments */
+    /* ========== Mobile Table Adjustments ========== */
     table {
         table-layout: auto !important;
     }
@@ -1698,7 +1937,7 @@ input[type="time"] {
         display: none;
     }
 
-    /* Cart Table */
+    /* ========== Mobile Cart Table ========== */
     #page-pos #cart-table {
         table-layout: fixed;
         width: 100%;
@@ -1756,7 +1995,7 @@ input[type="time"] {
         padding-bottom: 12px;
     }
 
-    /* Product Quantity Group Mobile */
+    /* ========== Mobile Product Quantity Group ========== */
     #page-pos #add-to-cart-form .product-quantity-group {
         gap: 2px !important;
     }
@@ -1767,7 +2006,7 @@ input[type="time"] {
         font-size: clamp(0.75rem, 1.5vw, 0.85em) !important;
     }
 
-    /* POS Mobile */
+    /* ========== Mobile POS ========== */
     #page-pos h2, #page-pos h3 {
         margin-bottom: 10px;
         padding-bottom: 5px;
@@ -1868,7 +2107,7 @@ input[type="time"] {
         width: auto;
     }
 
-    /* Modal Mobile */
+    /* ========== Mobile Modal ========== */
     #modalBodyContent {
         padding: 10px 2px;
     }
@@ -1913,7 +2152,7 @@ input[type="time"] {
         display: table-row;
     }
 
-    /* Report Filter Mobile */
+    /* ========== Mobile Report Filter ========== */
     #report-filter-form {
         grid-template-columns: 1fr;
         gap: 8px;
@@ -1925,7 +2164,7 @@ input[type="time"] {
         justify-self: stretch;
     }
 
-    /* Admin Report Filters */
+    /* ========== Mobile Admin Report Filters ========== */
     #admin-report-filters .summary-form-inline {
         flex-direction: column;
         align-items: stretch;
@@ -1942,7 +2181,7 @@ input[type="time"] {
         grid-template-columns: 1fr;
     }
 
-    /* Seller Sections */
+    /* ========== Mobile Seller Sections ========== */
     .collapsible-content.seller-only {
         padding: 10px 8px;
         background-color: var(--background-color);
@@ -1974,7 +2213,7 @@ input[type="time"] {
         color: var(--text-color);
     }
 
-    /* Seller Sales History */
+    /* ========== Mobile Seller Sales History ========== */
     #seller-sales-history-table th {
         background-color: var(--primary-color);
         color: white;
@@ -2010,7 +2249,7 @@ input[type="time"] {
         white-space: nowrap;
     }
 
-    /* Seller Backup Content */
+    /* ========== Mobile Seller Backup Content ========== */
     #seller-backup-content p {
         font-size: 0.95em;
         line-height: 1.4;
@@ -2031,7 +2270,7 @@ input[type="time"] {
         font-weight: bold;
     }
 
-    /* Stock Forms Mobile */
+    /* ========== Mobile Stock Forms ========== */
     #stock-in-form .form-actions,
     #stock-out-form .form-actions {
         display: flex !important;
@@ -2064,7 +2303,7 @@ input[type="time"] {
         line-height: 1.2 !important;
     }
 
-    /* Date/Time Group Mobile */
+    /* ========== Mobile Date/Time Group ========== */
     #page-pos #add-to-cart-form .date-time-group input,
     #stock-in-form .date-time-group input,
     #stock-out-form .date-time-group input {
@@ -2072,7 +2311,7 @@ input[type="time"] {
         letter-spacing: -0.5px !important;
     }
 
-    /* User Table Mobile */
+    /* ========== Mobile User Table ========== */
     #page-users .table-container {
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch;
@@ -2133,101 +2372,54 @@ input[type="time"] {
     }
 }
 
-/* Grid Layouts for Export Forms */
-#sales-history-export-form,
-#report-filter-form,
-#seller-filter-by-range-div,
-#seller-detailed-report-form .summary-form-inline,
-#seller-credit-report-form .summary-form-inline,
-#seller-transfer-report-form .summary-form-inline,
-#admin-report-filters .summary-form-inline,
-#seller-summary-content .summary-form-inline > div {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-    align-items: end !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    justify-content: stretch !important;
-}
+/* ============================================
+   33. EXTRA SMALL SCREEN ADJUSTMENTS (< 400px)
+   ============================================ */
 
-#sales-history-export-form label,
-#report-filter-form label,
-#seller-filter-by-range-div label,
-#seller-detailed-report-form .summary-form-inline label,
-#seller-credit-report-form .summary-form-inline label,
-#seller-transfer-report-form .summary-form-inline label,
-#seller-summary-content label {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    margin: 0 !important;
-    text-align: left !important;
-    font-size: 0.9em !important;
-    font-weight: bold !important;
-    color: var(--text-color) !important;
-}
+@media (max-width: 400px) {
+    #user-info-container {
+        font-size: 0.65rem !important;
+        gap: 4px !important;
+    }
 
-input[type="date"] {
-    width: 100% !important;
-    box-sizing: border-box !important;
-    margin-top: 5px !important;
-    padding: 8px !important;
-    min-width: 0 !important;
-}
+    #user-info-container button {
+        font-size: 0.6rem !important;
+        padding: 2px 8px !important;
+        min-height: 24px !important;
+    }
 
-#admin-report-filters .summary-form-inline {
-    grid-template-rows: auto auto !important;
-    gap: 2px 10px !important;
-}
+    #user-info {
+        font-size: 0.6rem !important;
+    }
 
-#admin-report-filters .summary-form-inline label:nth-of-type(1) {
-    grid-row: 1;
-    grid-column: 1;
-    text-align: left !important;
-    margin-bottom: 0 !important;
-}
+    .online-status {
+        width: 6px !important;
+        height: 6px !important;
+        margin-left: 2px !important;
+    }
 
-#admin-report-filters .summary-form-inline input:nth-of-type(1) {
-    grid-row: 2;
-    grid-column: 1;
-    margin-top: 0 !important;
-}
+    #page-pos #cart-table td {
+        font-size: clamp(8px, 2vw, 10px) !important;
+        padding: 2px 3px !important;
+    }
 
-#admin-report-filters .summary-form-inline label:nth-of-type(2) {
-    grid-row: 1;
-    grid-column: 2;
-    text-align: left !important;
-    margin-bottom: 0 !important;
-}
+    #page-pos #cart-table .action-buttons button {
+        font-size: 0.7em !important;
+        padding: 2px 4px !important;
+    }
 
-#admin-report-filters .summary-form-inline input:nth-of-type(2) {
-    grid-row: 2;
-    grid-column: 2;
-    margin-top: 0 !important;
-}
+    #page-pos #cart-total {
+        font-size: 1.1rem !important;
+    }
 
-#sales-history-export-form button,
-#report-filter-form button,
-#report-filter-form label:has(select),
-#seller-sales-filter-form button,
-#seller-detailed-report-form .form-actions,
-#seller-credit-report-form .form-actions,
-#seller-transfer-report-form .form-actions {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    margin-top: 10px !important;
-}
+    #page-pos #process-sale-btn {
+        font-size: 0.8em !important;
+        padding: 4px 6px !important;
+    }
 
-#report-filter-form select {
-    width: 100% !important;
-}
-/* Animation สำหรับปุ่มซิงค์ข้อมูล */
-@keyframes spin-animation {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-.spin {
-    display: inline-block;
-    animation: spin-animation 1s linear infinite;
+    #modalBodyContent table th,
+    #modalBodyContent table td {
+        font-size: clamp(6px, 1.5vw, 7px) !important;
+        padding: 2px 1px !important;
+    }
 }

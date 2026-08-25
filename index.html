@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -196,7 +195,7 @@
         </div>
 
         <footer class="app-footer">
-            &copy; 250869 pos-system-b5e73. All Rights Reserved.
+            &copy; 250869 salejuckphai. All Rights Reserved.
         </footer>
         
     </div>
@@ -238,7 +237,7 @@
         </div>
     </div>
     
-    <!-- RESET MODAL -->
+<!-- RESET MODAL -->
     <div id="resetModal" class="modal-overlay">
         <div id="reset-modal-content">
             <h3>เลือกข้อมูลที่จะรีเซ็ต</h3>
@@ -246,6 +245,9 @@
             <div id="reset-options-container">
                 <label><input type="checkbox" id="reset-sales-checkbox"> ลบประวัติการขายทั้งหมด (Sales)</label>
                 <label><input type="checkbox" id="reset-stockins-checkbox"> ลบประวัติการนำเข้าทั้งหมด (Stock-ins)</label>
+                <!-- เพิ่มบรรทัดด้านล่างนี้เข้าไปครับ -->
+                <label><input type="checkbox" id="reset-stockouts-checkbox"> ลบประวัติปรับสต็อก/นำออกทั้งหมด (Stock-outs)</label>
+                
                 <label><input type="checkbox" id="reset-products-checkbox"> ลบสินค้าทั้งหมด (Products)</label>
                 <label style="color: var(--danger-color);"><input type="checkbox" id="reset-sellers-checkbox"> ลบผู้ขายทั้งหมด (Sellers - ยกเว้น Admin)</label>
                 <label style="color: var(--danger-color);"><input type="checkbox" id="reset-stores-checkbox"> ลบร้านค้าทั้งหมด (Stores)</label>
@@ -362,34 +364,38 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-analytics.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, enableIndexedDbPersistence, collection } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore.js";
+        import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDKEQVWfw0tULXvJF525jD5YXpdwyosFzU",
-  authDomain: "pos-system-b5e73.firebaseapp.com",
-  projectId: "pos-system-b5e73",
-  storageBucket: "pos-system-b5e73.firebasestorage.app",
-  messagingSenderId: "40551826282",
-  appId: "1:40551826282:web:70d49178ed79b6304b1b13",
-  measurementId: "G-Z85ZBPMC64"
-};
+        // Firebase configuration for POS System
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKEQVWfw0tULXvJF525jD5YXpdwyosFzU",
+            authDomain: "pos-system-b5e73.firebaseapp.com",
+            databaseURL: "https://pos-system-b5e73-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "pos-system-b5e73",
+            storageBucket: "pos-system-b5e73.firebasestorage.app",
+            messagingSenderId: "40551826282",
+            appId: "1:40551826282:web:70d49178ed79b6304b1b13",
+            measurementId: "G-Z85ZBPMC64"
+        };
 
         window._initFirebaseModule = async function() {
             try {
                 const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app);
                 const auth = getAuth(app);
-                const db = getFirestore(app);
-
-                try { 
-                    await enableIndexedDbPersistence(db);
-                    console.log('Firebase Persistence Enabled'); 
-                } catch (err) {
-                    console.log('Persistence Error/Already Enabled:', err.code);
-                }
+                
+                // ใช้ initializeFirestore แทน getFirestore เพื่อตั้งค่า Cache แบบรองรับหลายแท็บ (Multi-tab)
+                const db = initializeFirestore(app, {
+                    localCache: persistentLocalCache({
+                        tabManager: persistentMultipleTabManager()
+                    })
+                });
+                console.log('Firebase Persistence Enabled (Multi-Tab Supported)');
 
                 await signInAnonymously(auth);
-                return { app, auth, db };
+                return { app, auth, db, analytics };
             } catch (e) {
                 console.error("Firebase Init Error:", e);
                 return null;
