@@ -1310,7 +1310,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
     
-    // 7.3 Save Backup To File
+// 7.3 Save Backup To File
     async saveBackupToFile() {
       const now = new Date();
       const year = now.getFullYear();
@@ -1318,11 +1318,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const day = String(now.getDate()).padStart(2, "0");
       const hours = String(now.getHours()).padStart(2, "0");
       const minutes = String(now.getMinutes()).padStart(2, "0");
-      const dateTimeString = `${year}${month}${day}_${hours}${minutes}`;
+      const seconds = String(now.getSeconds()).padStart(2, "0");
+      const timeStr = `${year}${month}${day}${hours}${minutes}${seconds}`;
+      
       const currentUser = this.currentUser.username;
-      const fullFileName = `บันทึกรายการขาย${currentUser}_${dateTimeString}.json`;
+      const fullFileName = `บันทึกรายการขาย${currentUser}_${timeStr}.json`;
+      
       let dataToSaveString;
       const backupPassword = this.data.backupPassword;
+      
       if (backupPassword) {
         try {
           this.showToast("กำลังเข้ารหัสข้อมูลด้วยรหัสผ่านของระบบ...", "warning");
@@ -1349,8 +1353,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       this.showToast(`บันทึกไฟล์ "${fullFileName}" เรียบร้อย`);
-    },
-    
+    },    
     // 7.4 Show Export Options Modal
     showExportOptionsModal() {
       const modal = document.getElementById('exportOptionsModal');
@@ -1363,7 +1366,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (modal) modal.style.display = 'none';
     },
     
-    // 7.6 Export Full Backup
+   // 7.6 Export Full Backup
     async exportFullBackup() {
       this.closeExportOptionsModal();
       const backupData = {
@@ -1380,22 +1383,31 @@ document.addEventListener("DOMContentLoaded", () => {
         backupDate: new Date().toISOString()
       };
       const password = this.data.backupPassword;
+      
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      const seconds = String(now.getSeconds()).padStart(2, "0");
+      const timeStr = `${year}${month}${day}${hours}${minutes}${seconds}`;
+
       if (password && typeof this.encryptData === 'function') {
         try {
           this.showToast('กำลังเข้ารหัสข้อมูล กรุณารอสักครู่...', 'warning');
           const encryptedData = await this.encryptData(JSON.stringify(backupData), password);
-          this.downloadJSON(encryptedData, `backup_full_encrypted_${new Date().toISOString().split('T')[0]}`);
+          this.downloadJSON(encryptedData, `backup_full_encrypted_${timeStr}`);
           this.showToast('เข้ารหัสและบันทึกไฟล์สำเร็จ', 'success');
         } catch (error) {
           alert("เกิดข้อผิดพลาดในการเข้ารหัสข้อมูล: " + error.message);
         }
       } else {
-        this.downloadJSON(backupData, `backup_full_${new Date().toISOString().split('T')[0]}`);
+        this.downloadJSON(backupData, `backup_full_${timeStr}`);
         this.showToast('บันทึกไฟล์สำเร็จ', 'success');
       }
     },
-    
-    // 7.7 Export Account Backup
+   // 7.7 Export Account Backup
     async exportAccountBackup() {
       this.closeExportOptionsModal();
       const allPersons = this.data.users || [];
@@ -1436,7 +1448,18 @@ document.addEventListener("DOMContentLoaded", () => {
         backupDate: new Date().toISOString()
       };
       const password = this.data.backupPassword;
-      const fileNameBase = `backup_account_${selectedPersonName}_${new Date().toISOString().split('T')[0]}`;
+      
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      const seconds = String(now.getSeconds()).padStart(2, "0");
+      const timeStr = `${year}${month}${day}${hours}${minutes}${seconds}`;
+      
+      const fileNameBase = `backup_account_${selectedPersonName}_${timeStr}`;
+      
       if (password && typeof this.encryptData === 'function') {
         try {
           this.showToast('กำลังเข้ารหัสข้อมูล กรุณารอสักครู่...', 'warning');
@@ -1450,8 +1473,7 @@ document.addEventListener("DOMContentLoaded", () => {
         this.downloadJSON(backupData, fileNameBase);
         this.showToast('บันทึกไฟล์สำเร็จ', 'success');
       }
-    },
-    
+    },    
     // 7.8 Show Single Date Export Modal
     showSingleDateExportModal() {
       this.closeExportOptionsModal();

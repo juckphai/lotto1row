@@ -195,7 +195,7 @@
         </div>
 
         <footer class="app-footer">
-            &copy; 250869 salejuckphai. All Rights Reserved.
+            &copy; 250869 pos-system-b5e73. All Rights Reserved.
         </footer>
         
     </div>
@@ -387,12 +387,14 @@
                 const auth = getAuth(app);
                 
                 // ใช้ initializeFirestore แทน getFirestore เพื่อตั้งค่า Cache แบบรองรับหลายแท็บ (Multi-tab)
+                // เพิ่ม experimentalForceLongPolling: true เพื่อบังคับใช้ Long Polling
                 const db = initializeFirestore(app, {
                     localCache: persistentLocalCache({
                         tabManager: persistentMultipleTabManager()
-                    })
+                    }),
+                    experimentalForceLongPolling: true // เพิ่มบรรทัดนี้เพื่อบังคับใช้ Long Polling
                 });
-                console.log('Firebase Persistence Enabled (Multi-Tab Supported)');
+                console.log('Firebase Persistence Enabled (Multi-Tab Supported) with Long Polling');
 
                 await signInAnonymously(auth);
                 return { app, auth, db, analytics };
