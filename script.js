@@ -919,17 +919,26 @@ document.addEventListener("DOMContentLoaded", () => {
       return bytes.buffer;
     },
     
-    // 4.10 Derive Key
-    async deriveKey(password, salt) {
-      const enc = new TextEncoder();
-      const keyMaterial = await window.crypto.subtle.importKey(
+ // 4.10 Derive Key
+async deriveKey(password, salt) {
+    const enc = new TextEncoder();
+    const keyMaterial = await window.crypto.subtle.importKey(
         "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
-      );
-      return window.crypto.subtle.deriveKey(
+    );
+    return window.crypto.subtle.deriveKey(
         { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
         keyMaterial, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]
-      );
-    },
+    );
+},
+
+// =================================================================
+// 4.11 Mark As Deleted (Hard Delete Version - ไม่เก็บ Tombstone)
+// =================================================================
+_markAsDeleted(id) {
+    // 🔥 Hard Delete: ไม่เก็บ Tombstone
+    // ข้อมูลจะถูกลบอย่างถาวร ไม่สามารถกู้คืนได้
+    return;
+},
 
     // =================================================================
     // 5. DATA PERSISTENCE & SYNC (Offline-First)
@@ -1027,56 +1036,27 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
     
-    // 5.5 Merge From Cloud (Smart Merge)
-    _markAsDeleted(id) {
-      if (!this.data._meta) this.data._meta = {};
-      if (!this.data._meta.deleted) this.data._meta.deleted = {};
-      this.data._meta.deleted[String(id)] = Date.now();
-    },
-    
-    mergeFromCloud(remote) {
-      if (!remote || !remote._meta) return false;
+// =================================================================
+// 5.5 Merge From Cloud (Hard Delete Version)
+// =================================================================
+mergeFromCloud(remote) {
+    if (!remote || !remote._meta) return false;
 
-      console.log("🔄 กำลังผสานข้อมูลจาก Cloud แบบรายชิ้น...");
-      let hasLocalUnsyncedChanges = false;
+    console.log("🔄 กำลังผสานข้อมูลจาก Cloud แบบ Hard Delete...");
+    let hasLocalUnsyncedChanges = false;
 
-      // 1. ผสานรายการที่ถูกลบ (Tombstones)
-      if (!this.data._meta.deleted) this.data._meta.deleted = {};
-      if (remote._meta && remote._meta.deleted) {
-          for (const [id, ts] of Object.entries(remote._meta.deleted)) {
-              if (!this.data._meta.deleted[id] || ts > this.data._meta.deleted[id]) {
-                  this.data._meta.deleted[id] = ts;
-              }
-          }
-      }
-
-      const mergeArray = (localArr, remoteArr) => {
+    const mergeArray = (localArr, remoteArr) => {
         const result = [];
         const localMap = new Map(localArr.map(i => [String(i.id), i]));
         const remoteMap = new Map(remoteArr.map(i => [String(i.id), i]));
-        const deletedMap = this.data._meta.deleted || {};
         
-        // ก. ตรวจสอบข้อมูลในฝั่งคลาวด์
+        // ใช้ข้อมูลจาก Cloud เป็นหลัก
         remoteMap.forEach((remoteItem, id) => {
-            if (deletedMap[id]) return; // ข้ามรายการที่ถูกลบไปแล้ว
-            
-            if (localMap.has(id)) {
-                const localItem = localMap.get(id);
-                if (localItem.updatedAt && remoteItem.updatedAt && localItem.updatedAt > remoteItem.updatedAt) {
-                    result.push(localItem);
-                    hasLocalUnsyncedChanges = true;
-                } else {
-                    result.push(remoteItem);
-                }
-            } else {
-                result.push(remoteItem);
-            }
+            result.push(remoteItem);
         });
         
-        // ข. ตรวจสอบข้อมูลในเครื่องเราที่คลาวด์ไม่มี
+        // ข้อมูลในเครื่องที่ Cloud ไม่มี ให้ถือว่าเป็นข้อมูลใหม่
         localMap.forEach((localItem, id) => {
-            if (deletedMap[id]) return; // ถ้ารายการนี้ถูกลบไปแล้ว ไม่ต้องดันขึ้นคลาวด์
-            
             if (!remoteMap.has(id)) {
                 result.push(localItem);
                 hasLocalUnsyncedChanges = true;
@@ -1084,46 +1064,56 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         
         return result;
-      };
+    };
 
-      // ผสานทุกตารางข้อมูล
-      this.data.sales = mergeArray(this.data.sales || [], remote.sales || []);
-      this.data.stockIns = mergeArray(this.data.stockIns || [], remote.stockIns || []);
-      this.data.stockOuts = mergeArray(this.data.stockOuts || [], remote.stockOuts || []);
-      this.data.products = mergeArray(this.data.products || [], remote.products || []);
-      this.data.stores = mergeArray(this.data.stores || [], remote.stores || []);
-      this.data.users = mergeArray(this.data.users || [], remote.users || []);
-      
-      this.data.backupPassword = remote.backupPassword || this.data.backupPassword;
-      if (remote.autoReport && remote._meta.lastLocalUpdate > this.data._meta.lastLocalUpdate) {
-          this.data.autoReport = remote.autoReport;
-      }
-
-      this.data._meta.lastLocalUpdate = Math.max(this.data._meta.lastLocalUpdate, remote._meta.lastLocalUpdate);
-      this.data._meta.lastCloudSync = Date.now();
-      
-      this.recalculateAllStock();
-      this.saveLocal();
-      this.refreshCurrentPage();
-      
-      return hasLocalUnsyncedChanges;
-    },
+    // ผสานทุกตารางข้อมูล (ไม่สนใจ Tombstone)
+    this.data.sales = mergeArray(this.data.sales || [], remote.sales || []);
+    this.data.stockIns = mergeArray(this.data.stockIns || [], remote.stockIns || []);
+    this.data.stockOuts = mergeArray(this.data.stockOuts || [], remote.stockOuts || []);
+    this.data.products = mergeArray(this.data.products || [], remote.products || []);
+    this.data.stores = mergeArray(this.data.stores || [], remote.stores || []);
+    this.data.users = mergeArray(this.data.users || [], remote.users || []);
     
-    // 5.6 Push To Cloud
-    async pushToCloud() {
-      if (!this.firebase?.db) return;
-      try {
-        // บังคับให้เวลาอัปเดตเดินหน้าเสมอ แม้นาฬิกาเครื่องจะเพี้ยน
+    this.data.backupPassword = remote.backupPassword || this.data.backupPassword;
+    if (remote.autoReport && remote._meta.lastLocalUpdate > this.data._meta.lastLocalUpdate) {
+        this.data.autoReport = remote.autoReport;
+    }
+
+    this.data._meta.lastLocalUpdate = Math.max(this.data._meta.lastLocalUpdate, remote._meta.lastLocalUpdate);
+    this.data._meta.lastCloudSync = Date.now();
+    
+    this.recalculateAllStock();
+    this.saveLocal();
+    this.refreshCurrentPage();
+    
+    return hasLocalUnsyncedChanges;
+},
+    
+// =================================================================
+// 5.6 Push To Cloud (Hard Delete Version - ไม่ส่ง Tombstone)
+// =================================================================
+async pushToCloud() {
+    if (!this.firebase?.db) return;
+    try {
+        // บังคับให้เวลาอัปเดตเดินหน้าเสมอ
         this.data._meta.lastLocalUpdate = Math.max(Date.now(), (this.data._meta.lastLocalUpdate || 0) + 1);
+        
+        // สร้างสำเนาข้อมูลที่จะส่งขึ้น Cloud
         const dataToSync = JSON.parse(JSON.stringify(this.data));
+        
+        // 🔥 ลบ Tombstone ออกจากข้อมูลที่จะส่งขึ้น Cloud (Hard Delete)
+        if (dataToSync._meta && dataToSync._meta.deleted) {
+            delete dataToSync._meta.deleted;
+        }
+        
         await window.firebase_tools_setDoc(this.firebase.db, "pos", "data", dataToSync);
         this.data._meta.lastCloudSync = Date.now();
         this.saveLocal();
-        console.log("📤 Push ข้อมูลขึ้น Cloud สำเร็จ");
-      } catch (e) {
+        console.log("📤 Push ข้อมูลขึ้น Cloud สำเร็จ (Hard Delete)");
+    } catch (e) {
         console.warn("Failed to sync to Firestore:", e);
-      }
-    },
+    }
+},
     
     // 5.7 Start Realtime Sync
     startRealtimeSync() {
@@ -1748,55 +1738,112 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("resetModal").style.display = "none";
     },
     
-// 8.5 Handle Selective Reset
-    handleSelectiveReset() {
-      const resetSales = document.getElementById("reset-sales-checkbox")?.checked;
-      const resetStockIns = document.getElementById("reset-stockins-checkbox")?.checked;
-      const resetStockOuts = document.getElementById("reset-stockouts-checkbox")?.checked;
-      const resetProducts = document.getElementById("reset-products-checkbox")?.checked;
-      const resetSellers = document.getElementById("reset-sellers-checkbox")?.checked;
-      const resetStores = document.getElementById("reset-stores-checkbox")?.checked;
+// =================================================================
+// 8.5 Handle Selective Reset (Hard Delete Version - ลบ Tombstone ด้วย)
+// =================================================================
+handleSelectiveReset() {
+    const resetSales = document.getElementById("reset-sales-checkbox")?.checked;
+    const resetStockIns = document.getElementById("reset-stockins-checkbox")?.checked;
+    const resetStockOuts = document.getElementById("reset-stockouts-checkbox")?.checked;
+    const resetProducts = document.getElementById("reset-products-checkbox")?.checked;
+    const resetSellers = document.getElementById("reset-sellers-checkbox")?.checked;
+    const resetStores = document.getElementById("reset-stores-checkbox")?.checked;
 
-      if (!resetSales && !resetStockIns && !resetStockOuts && !resetProducts && !resetSellers && !resetStores) {
+    if (!resetSales && !resetStockIns && !resetStockOuts && !resetProducts && !resetSellers && !resetStores) {
         this.showToast("กรุณาเลือกส่วนที่ต้องการรีเซ็ตอย่างน้อย 1 ส่วน", "warning");
         return;
-      }
-      
-      if (confirm("🚨 คำเตือนวิกฤต: คุณแน่ใจหรือไม่ที่จะล้างข้อมูลส่วนที่เลือก? การกระทำนี้ไม่สามารถย้อนกลับได้!")) {
+    }
+    
+    if (confirm("🚨 คำเตือนวิกฤต: คุณแน่ใจหรือไม่ที่จะล้างข้อมูลส่วนที่เลือก? การกระทำนี้ไม่สามารถย้อนกลับได้!")) {
+        // 🔥 เก็บ ID ของข้อมูลที่จะลบ เพื่อใช้ลบ Tombstone
+        const deletedIds = [];
+        
         if (resetSales) {
-            this.data.sales.forEach(s => this._markAsDeleted(s.id));
+            this.data.sales.forEach(s => {
+                this._markAsDeleted(s.id);
+                deletedIds.push(String(s.id));
+            });
             this.data.sales = [];
         }
         if (resetStockIns) {
-            this.data.stockIns.forEach(s => this._markAsDeleted(s.id));
+            this.data.stockIns.forEach(s => {
+                this._markAsDeleted(s.id);
+                deletedIds.push(String(s.id));
+            });
             this.data.stockIns = [];
         }
         if (resetStockOuts) {
-            this.data.stockOuts.forEach(s => this._markAsDeleted(s.id));
+            this.data.stockOuts.forEach(s => {
+                this._markAsDeleted(s.id);
+                deletedIds.push(String(s.id));
+            });
             this.data.stockOuts = [];
         }
         if (resetProducts) {
-            this.data.products.forEach(p => this._markAsDeleted(p.id));
+            this.data.products.forEach(p => {
+                this._markAsDeleted(p.id);
+                deletedIds.push(String(p.id));
+            });
             this.data.products = [];
         }
         if (resetStores) {
-            this.data.stores.forEach(s => this._markAsDeleted(s.id));
+            this.data.stores.forEach(s => {
+                this._markAsDeleted(s.id);
+                deletedIds.push(String(s.id));
+            });
             this.data.stores = [];
         }
         if (resetSellers) {
             this.data.users.forEach(u => {
-                if (u.role !== "admin" && u.id !== "static-admin-id-001") this._markAsDeleted(u.id);
+                if (u.role !== "admin" && u.id !== "static-admin-id-001") {
+                    this._markAsDeleted(u.id);
+                    deletedIds.push(String(u.id));
+                }
             });
             this.data.users = this.data.users.filter(u => u.role === "admin" || u.id === "static-admin-id-001");
+        }
+        
+        // 🔥 ลบ Tombstone ของข้อมูลที่ถูกลบทั้งหมด
+        if (this.data._meta && this.data._meta.deleted) {
+            deletedIds.forEach(id => {
+                if (this.data._meta.deleted[id]) {
+                    delete this.data._meta.deleted[id];
+                }
+            });
+            
+            // ถ้าไม่มี Tombstone เหลือเลย ให้ลบ Object ทั้งหมด
+            if (Object.keys(this.data._meta.deleted).length === 0) {
+                delete this.data._meta.deleted;
+            }
         }
         
         this.recalculateAllStock();
         this.saveData();
         this.closeResetModal();
-        this.showToast("🔥 รีเซ็ตข้อมูลที่เลือกและคำนวณสต็อกใหม่สำเร็จ", "success");
+        this.showToast("🔥 รีเซ็ตข้อมูลที่เลือกและลบ Tombstone เรียบร้อย", "success");
         setTimeout(() => location.reload(), 1000);
-      }
-    },
+    }
+},
+// =================================================================
+// 8.6 Clear All Tombstones (Hard Reset - ลบ Tombstone ทั้งหมด)
+// =================================================================
+clearAllTombstones() {
+    if (this.data._meta && this.data._meta.deleted) {
+        const count = Object.keys(this.data._meta.deleted).length;
+        if (count === 0) {
+            this.showToast("ไม่มี Tombstone ในระบบ", "info");
+            return;
+        }
+        
+        if (confirm(`🚨 คุณต้องการลบ Tombstone ทั้งหมด ${count} รายการใช่หรือไม่?\n\n⚠️ คำเตือน: การลบ Tombstone จะทำให้ข้อมูลที่ถูกลบไปแล้วไม่สามารถป้องกันการคืนกลับมาอีกได้`)) {
+            delete this.data._meta.deleted;
+            this.saveData();
+            this.showToast(`✅ ลบ Tombstone ทั้งหมด ${count} รายการเรียบร้อย`, "success");
+        }
+    } else {
+        this.showToast("ไม่พบ Tombstone ในระบบ", "info");
+    }
+},
     // =================================================================
     // 9. STOCK MANAGEMENT
     // =================================================================
@@ -4276,6 +4323,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (e.target.id === "save-to-file-btn") this.showExportOptionsModal();
           if (e.target.id === "save-to-browser-btn" || e.target.id === "save-to-browser-btn-seller") this.manualSaveToBrowser();
           if (e.target.id === "open-reset-modal-btn") this.openResetModal();
+          if (e.target.id === "clear-tombstones-btn") this.clearAllTombstones();
           if (e.target.id === "generate-stock-report-btn") this.renderStockSummaryReport();
           if (e.target.id === "generate-yesterday-stock-report-btn") this.renderYesterdayStockSummaryReport();
           if (e.target.id === "recalculate-stock-btn") this.handleRecalculateStock();

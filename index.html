@@ -128,13 +128,13 @@
                     บัญชีขาย <span id="store-display-name" style="color: #FFD700; font-style: normal;"></span>
                     <span id="connection-status" class="online-status" title="สถานะการเชื่อมต่อ"></span>
                 </h1>
-    <div id="user-info-container">
-    <span id="user-info"></span>
-    <button id="sync-data-btn" style="background-color: #28a745; margin-right: 10px;">
-    <span class="sync-icon">🔄</span> ซิงค์ข้อมูล
-</button>
-    <button id="logout-btn">ออกจากระบบ</button>
-</div>
+                <div id="user-info-container">
+                    <span id="user-info"></span>
+                    <button id="sync-data-btn" style="background-color: #28a745; margin-right: 10px;">
+                        <span class="sync-icon">🔄</span> ซิงค์ข้อมูล
+                    </button>
+                    <button id="logout-btn">ออกจากระบบ</button>
+                </div>
             </div>
 
             <div class="section-header header-pos" onclick="App.showPage('page-pos')">
@@ -183,7 +183,7 @@
             <div id="page-users" class="section-content admin-only"></div>
 
             <!-- NEW: Auto Report Menu (Admin Only) -->
-<div class="section-header header-auto-report admin-only" style="background-color: #ff5722; color: white;" onclick="App.showPage('page-auto-report')">
+            <div class="section-header header-auto-report admin-only" style="background-color: #ff5722; color: white;" onclick="App.showPage('page-auto-report')">
                 <span>📤 ส่งรายงานอัตโนมัติ</span><span class="arrow">▶</span>
             </div>
             <div id="page-auto-report" class="section-content admin-only"></div>
@@ -237,7 +237,7 @@
         </div>
     </div>
     
-<!-- RESET MODAL -->
+    <!-- RESET MODAL -->
     <div id="resetModal" class="modal-overlay">
         <div id="reset-modal-content">
             <h3>เลือกข้อมูลที่จะรีเซ็ต</h3>
@@ -245,9 +245,7 @@
             <div id="reset-options-container">
                 <label><input type="checkbox" id="reset-sales-checkbox"> ลบประวัติการขายทั้งหมด (Sales)</label>
                 <label><input type="checkbox" id="reset-stockins-checkbox"> ลบประวัติการนำเข้าทั้งหมด (Stock-ins)</label>
-                <!-- เพิ่มบรรทัดด้านล่างนี้เข้าไปครับ -->
                 <label><input type="checkbox" id="reset-stockouts-checkbox"> ลบประวัติปรับสต็อก/นำออกทั้งหมด (Stock-outs)</label>
-                
                 <label><input type="checkbox" id="reset-products-checkbox"> ลบสินค้าทั้งหมด (Products)</label>
                 <label style="color: var(--danger-color);"><input type="checkbox" id="reset-sellers-checkbox"> ลบผู้ขายทั้งหมด (Sellers - ยกเว้น Admin)</label>
                 <label style="color: var(--danger-color);"><input type="checkbox" id="reset-stores-checkbox"> ลบร้านค้าทั้งหมด (Stores)</label>
@@ -259,7 +257,7 @@
         </div>
     </div>
 
-    <!-- EXPORT OPTIONS MODAL (อัปเดตตามคำแนะนำใน 01.txt) -->
+    <!-- EXPORT OPTIONS MODAL -->
     <div id="exportOptionsModal" class="modal-overlay">
         <div class="format-modal-content">
             <h3 style="color: #4a90e2; margin-top: 0;">💾 เลือกรูปแบบการสำรองข้อมูล</h3>
